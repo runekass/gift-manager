@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gift Tracker</title>
+    <script>
+        async function addGift() {
+            const gift = {
+                gift_name: document.getElementById('gift_name').value,
+                giver: document.getElementById('giver').value,
+                price: parseFloat(document.getElementById('price').value),
+                responsible: document.getElementById('responsible').value,
+                completed: document.getElementById('completed').checked
+            };
+
+            const response = await fetch('http://localhost:3000/gifts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(gift)
+            });
+
+            const result = await response.text();
+            alert(result);
+        }
+
+        async function loadGifts() {
+            const response = await fetch('http://localhost:3000/gifts');
+            const gifts = await response.json();
+            const giftsList = document.getElementById('giftsList');
+            giftsList.innerHTML = '';
+            gifts.forEach(gift => {
+                giftsList.innerHTML += `<li>${gift.gift_name} - ${gift.giver} - $${gift.price} - ${gift.responsible} - ${gift.completed}</li>`;
+            });
+        }
+    </script>
+</head>
+<body>
+<h1>Gift Tracker</h1>
+<input type="text" id="gift_name" placeholder="Gift Name" required>
+<input type="text" id="giver" placeholder="Giver" required>
+<input type="number" id="price" placeholder="Price" required>
+<input type="text" id="responsible" placeholder="Responsible" required>
+<input type="checkbox" id="completed"> Completed
+<button onclick="addGift()">Add Gift</button>
+<h2>Gifts List</h2>
+<ul id="giftsList"></ul>
+<button onclick="loadGifts()">Load Gifts</button>
+</body>
+</html>
