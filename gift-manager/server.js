@@ -2,7 +2,6 @@ const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -12,11 +11,11 @@ app.use(bodyParser.json());
 app.use(express.static(__dirname));
 
 const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    host: process.env.DB_HOST || 'switchback.proxy.rlwy.net',
+    port: process.env.DB_PORT || 58577,
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASSWORD || 'KPrlTiiltFSYrDGEBtulBpCAEKMNsYVI',
+    database: process.env.DB_NAME || 'railway'
 });
 
 function connectDB() {
@@ -91,7 +90,5 @@ app.delete('/gifts/:id', (req, res) => {
 });
 
 app.listen(port, () => {
-    const url = `http://localhost:${port}`;
     console.log(`Server kjører på port ${port}`);
-    console.log(`Åpne nettleseren her: ${url}`);
 });
