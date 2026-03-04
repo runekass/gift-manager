@@ -11,18 +11,38 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(__dirname));
 
-const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-});
+// Parse DATABASE_URL if provided by Railway
+let dbConfig;
+if (process.env.DATABASE_URL) {
+    // Parse the DATABASE_URL (format: mysql://user:password@host:port/database)
+    const url = new URL(process.env.DATABASE_URL);
+    dbConfig = {
+        host: url.hostname,
+        port: parseInt(url.port) || 3306,
+        user: url.username,
+        password: url.password,
+        database: url.pathname.substring(1) // Remove leading slash
+    };
+    console.log('Using DATABASE_URL from Railway');
+} else {
+    // Use individual environment variables
+    dbConfig = {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME
+    };
+    console.log('Using individual database environment variables');
+}
+
+const db = mysql.createConnection(dbConfig);
 
 function connectDB() {
     db.connect(err => {
         if (err) {
-            console.error('MySQL connection failed:', err);
+            console.error('MySQL connection failed:', err.message);
+            console.log('Retrying in 5 seconds...');
             setTimeout(connectDB, 5000);
         } else {
             console.log('MySQL tilkoblet...');
@@ -33,6 +53,26 @@ function connectDB() {
 connectDB();
 
 // API-endepunkter
+app.get('/health', (req, res) => {
+    const status = {
+        status: 'ok',
+        port: port,
+        timestamp: new Date().toISOString()
+    };
+
+    // Check database connection
+    db.ping((err) => {
+        if (err) {
+            status.database = 'disconnected';
+            status.error = err.message;
+            res.status(500).json(status);
+        } else {
+            status.database = 'connected';
+            res.json(status);
+        }
+    });
+});
+
 app.post('/gifts', (req, res) => {
     const { gift_name, giver, price, responsible, completed } = req.body;
 
