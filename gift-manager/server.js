@@ -91,5 +91,7 @@ app.delete('/gifts/:id', (req, res) => {
 });
 
 app.listen(port, () => {
+    const url = `http://localhost:${port}`;
     console.log(`Server kjører på port ${port}`);
+    console.log(`Åpne nettleseren her: ${url}`);
 });
