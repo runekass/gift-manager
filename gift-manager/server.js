@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname));
+// Don't use static middleware yet - we'll add it at the end after API routes
 
 // Parse DATABASE_URL if provided by Railway
 let dbConfig;
