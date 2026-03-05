@@ -49,8 +49,14 @@ app.post('/gifts', (req, res) => {
 });
 
 app.get('/gifts', (req, res) => {
+    console.log('GET /gifts - Henter alle gaver');
     db.query('SELECT * FROM gifts', (err, results) => {
-        if (err) throw err;
+        if (err) {
+            console.error('Database feil ved henting av gaver:', err);
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        console.log(`Returnerer ${results.length} gaver`);
         res.json(results);
     });
 });

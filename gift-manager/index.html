@@ -427,56 +427,63 @@
 
 
         async function addGift() {
-            const gift = {
-                gift_name: document.getElementById('gift_name').value,
-                giver: document.getElementById('giver').value,
-                price: parseFloat(document.getElementById('price').value),
-                responsible: document.getElementById('responsible').value,
-                completed: document.getElementById('completed').checked
-            };
+            try {
+                const gift = {
+                    gift_name: document.getElementById('gift_name').value,
+                    giver: document.getElementById('giver').value,
+                    price: parseFloat(document.getElementById('price').value),
+                    responsible: document.getElementById('responsible').value,
+                    completed: document.getElementById('completed').checked
+                };
 
-            if (editingId) {
-                // Oppdater eksisterende gave
-                const response = await fetch(`http://localhost:3000/gifts/${editingId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(gift)
-                });
+                if (editingId) {
+                    // Oppdater eksisterende gave
+                    const response = await fetch(`/gifts/${editingId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(gift)
+                    });
 
-                const result = await response.text();
-                alert(result);
-                editingId = null;
-                document.querySelector('button').textContent = 'Legg til gave';
-            } else {
-                // Legg til ny gave
-                const response = await fetch('http://localhost:3000/gifts', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(gift)
-                });
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const result = await response.text();
+                    alert(result);
+                    editingId = null;
+                    document.querySelector('button').textContent = 'Legg til gave';
+                } else {
+                    // Legg til ny gave
+                    const response = await fetch('/gifts', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(gift)
+                    });
 
-                const result = await response.text();
-                alert(result);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const result = await response.text();
+                    alert(result);
+                }
+
+                // Slett skjemaet
+                document.getElementById('gift_name').value = '';
+                document.getElementById('giver').value = '';
+                document.getElementById('price').value = '';
+                document.getElementById('responsible').value = '';
+                document.getElementById('completed').checked = false;
+
+                // Last inn gavene på nytt
+                loadGifts();
+            } catch (error) {
+                console.error('Feil ved å legge til gave:', error);
+                alert('Feil: ' + error.message);
             }
-
-            // Slett skjemaet
-            document.getElementById('gift_name').value = '';
-            document.getElementById('giver').value = '';
-            document.getElementById('price').value = '';
-            document.getElementById('responsible').value = '';
-            document.getElementById('completed').checked = false;
-
-            // Last inn gavene på nytt
-            loadGifts();
         }
 
         function editGift(id) {
             // Finn gaven og fyll inn skjemaet
-            fetch('http://localhost:3000/gifts')
+            fetch('/gifts')
                 .then(response => response.json())
                 .then(gifts => {
                     const gift = gifts.find(g => g.id === id);
@@ -499,7 +506,7 @@
                 return;
             }
             if (confirm('Er du sikker på at du vil slette denne gaven?')) {
-                const response = await fetch(`http://localhost:3000/gifts/${id}`, {
+                const response = await fetch(`/gifts/${id}`, {
                     method: 'DELETE'
                 });
 
@@ -510,35 +517,43 @@
         }
 
         async function loadGifts() {
-            const response = await fetch('http://localhost:3000/gifts');
-            const gifts = await response.json();
-            const giftsList = document.getElementById('giftsList');
-            giftsList.innerHTML = '';
+            try {
+                const response = await fetch('/gifts');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const gifts = await response.json();
+                const giftsList = document.getElementById('giftsList');
+                giftsList.innerHTML = '';
 
-            if (gifts.length === 0) {
-                giftsList.innerHTML = '<div class="empty-state"><p>Ingen gaver lagt til ennå. Legg til din første gave ovenfor!</p></div>';
-                return;
+                if (gifts.length === 0) {
+                    giftsList.innerHTML = '<div class="empty-state"><p>Ingen gaver lagt til ennå. Legg til din første gave ovenfor!</p></div>';
+                    return;
+                }
+
+                gifts.forEach(gift => {
+                    const completedStatus = gift.completed ? '✓ Fullført' : '⏳ Venter';
+                    const deleteButton = isLoggedIn ? `<button class="btn-delete" onclick="deleteGift(${gift.id})">Slett</button>` : '';
+                    giftsList.innerHTML += `
+                        <li>
+                            <div class="gift-info">
+                                <div><strong>${gift.gift_name}</strong></div>
+                                <div>Fra: <strong>${gift.giver}</strong></div>
+                                <div>Pris: <strong>${formatPrice(gift.price)}</strong></div>
+                                <div>Ansvarlig: <strong>${gift.responsible}</strong></div>
+                                <div>Status: <strong>${completedStatus}</strong></div>
+                            </div>
+                            <div class="gift-actions">
+                                <button class="btn-edit" onclick="editGift(${gift.id})">Rediger</button>
+                                ${deleteButton}
+                            </div>
+                        </li>
+                    `;
+                });
+            } catch (error) {
+                console.error('Feil ved lasting av gaver:', error);
+                document.getElementById('giftsList').innerHTML = '<div class="empty-state"><p>Feil ved lasting av gaver. Sjekk at serveren kjører.</p></div>';
             }
-
-            gifts.forEach(gift => {
-                const completedStatus = gift.completed ? '✓ Fullført' : '⏳ Venter';
-                const deleteButton = isLoggedIn ? `<button class="btn-delete" onclick="deleteGift(${gift.id})">Slett</button>` : '';
-                giftsList.innerHTML += `
-                    <li>
-                        <div class="gift-info">
-                            <div><strong>${gift.gift_name}</strong></div>
-                            <div>Fra: <strong>${gift.giver}</strong></div>
-                            <div>Pris: <strong>${formatPrice(gift.price)}</strong></div>
-                            <div>Ansvarlig: <strong>${gift.responsible}</strong></div>
-                            <div>Status: <strong>${completedStatus}</strong></div>
-                        </div>
-                        <div class="gift-actions">
-                            <button class="btn-edit" onclick="editGift(${gift.id})">Rediger</button>
-                            ${deleteButton}
-                        </div>
-                    </li>
-                `;
-            });
         }
 
         window.onload = function() {
