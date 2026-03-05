@@ -9,7 +9,6 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname));
 
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -79,6 +78,9 @@ app.delete('/gifts/:id', (req, res) => {
         res.send('Gave slettet...');
     });
 });
+
+// Serve static files AFTER API routes
+app.use(express.static(__dirname));
 
 app.listen(port, () => {
     console.log(`Server kjører på http://localhost:${port}`);
