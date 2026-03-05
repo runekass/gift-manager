@@ -11,23 +11,29 @@ app.use(cors());
 app.use(bodyParser.json());
 
 const db = mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    host: process.env.MYSQLHOST || process.env.DB_HOST,
+    port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+    user: process.env.MYSQLUSER || process.env.DB_USER,
+    password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
+    database: process.env.MYSQLDATABASE || process.env.DB_NAME
 });
 
 db.connect(err => {
     if (err) {
         console.error('Databasefeil:', err.message);
-        console.error('DB Host:', process.env.DB_HOST);
-        console.error('DB Port:', process.env.DB_PORT);
-        console.error('DB User:', process.env.DB_USER);
-        console.error('DB Name:', process.env.DB_NAME);
+        console.error('DB Host:', process.env.MYSQLHOST || process.env.DB_HOST);
+        console.error('DB Port:', process.env.MYSQLPORT || process.env.DB_PORT);
+        console.error('DB User:', process.env.MYSQLUSER || process.env.DB_USER);
+        console.error('DB Name:', process.env.MYSQLDATABASE || process.env.DB_NAME);
         throw err;
     }
     console.log('MySQL tilkoblet...');
+    console.log('Tilkobling:', {
+        host: process.env.MYSQLHOST || process.env.DB_HOST,
+        port: process.env.MYSQLPORT || process.env.DB_PORT,
+        user: process.env.MYSQLUSER || process.env.DB_USER,
+        database: process.env.MYSQLDATABASE || process.env.DB_NAME
+    });
 });
 
 // API-endepunkter
