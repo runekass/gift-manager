@@ -14,11 +14,11 @@ app.use(express.static(__dirname));
 // Create a connection pool instead of a single connection
 const pool = mysql.createPool({
     connectionLimit: 10,
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    host: process.env.MYSQLHOST || process.env.DB_HOST,
+    port: process.env.MYSQLPORT || process.env.DB_PORT,
+    user: process.env.MYSQLUSER || process.env.DB_USER,
+    password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
+    database: process.env.MYSQLDATABASE || process.env.DB_NAME,
     waitForConnections: true,
     queueLimit: 0
 });
@@ -28,18 +28,18 @@ pool.getConnection((err, connection) => {
     if (err) {
         console.error('MySQL connection pool failed:', err.message);
         console.error('Configuration:', {
-            host: process.env.DB_HOST,
-            port: process.env.DB_PORT,
-            user: process.env.DB_USER,
-            database: process.env.DB_NAME
+            host: process.env.MYSQLHOST || process.env.DB_HOST,
+            port: process.env.MYSQLPORT || process.env.DB_PORT,
+            user: process.env.MYSQLUSER || process.env.DB_USER,
+            database: process.env.MYSQLDATABASE || process.env.DB_NAME
         });
     } else {
         console.log('MySQL tilkoblet...');
         console.log('DB Config:', {
-            host: process.env.DB_HOST,
-            port: process.env.DB_PORT,
-            user: process.env.DB_USER,
-            database: process.env.DB_NAME
+            host: process.env.MYSQLHOST || process.env.DB_HOST,
+            port: process.env.MYSQLPORT || process.env.DB_PORT,
+            user: process.env.MYSQLUSER || process.env.DB_USER,
+            database: process.env.MYSQLDATABASE || process.env.DB_NAME
         });
         connection.release();
     }
