@@ -27,13 +27,23 @@ app.use((req, res, next) => {
     next();
 });
 
-const db = mysql.createConnection({
-    host: process.env.MYSQLHOST || process.env.DB_HOST,
-    port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
-    user: process.env.MYSQLUSER || process.env.DB_USER,
-    password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
-    database: process.env.MYSQLDATABASE || process.env.DB_NAME
-});
+// Create database connection
+let db;
+
+if (process.env.MYSQL_URL) {
+    // Use Railway's MYSQL_URL if available (internal connection string)
+    console.log('Using MYSQL_URL connection string');
+    db = mysql.createConnection(process.env.MYSQL_URL);
+} else {
+    // Fallback to individual variables
+    db = mysql.createConnection({
+        host: process.env.MYSQLHOST || process.env.DB_HOST,
+        port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+        user: process.env.MYSQLUSER || process.env.DB_USER,
+        password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
+        database: process.env.MYSQLDATABASE || process.env.DB_NAME
+    });
+}
 
 db.connect(err => {
     if (err) {
