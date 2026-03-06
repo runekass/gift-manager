@@ -48,22 +48,30 @@ if (process.env.MYSQL_URL) {
 db.connect(err => {
     if (err) {
         console.error('Databasefeil:', err.message);
-        console.error('DB Host:', process.env.MYSQLHOST || process.env.DB_HOST);
-        console.error('DB Port:', process.env.MYSQLPORT || process.env.DB_PORT);
-        console.error('DB User:', process.env.MYSQLUSER || process.env.DB_USER);
-        console.error('DB Name:', process.env.MYSQLDATABASE || process.env.DB_NAME);
+        if (process.env.MYSQL_URL) {
+            console.error('Using MYSQL_URL (connection string)');
+            console.error('MYSQL_URL:', process.env.MYSQL_URL ? 'SET' : 'NOT SET');
+        } else {
+            console.error('DB Host:', process.env.MYSQLHOST || process.env.DB_HOST);
+            console.error('DB Port:', process.env.MYSQLPORT || process.env.DB_PORT);
+            console.error('DB User:', process.env.MYSQLUSER || process.env.DB_USER);
+            console.error('DB Name:', process.env.MYSQLDATABASE || process.env.DB_NAME);
+        }
         console.error('NODE_ENV:', process.env.NODE_ENV);
-        console.error('Using Railway internal:', !process.env.DB_HOST && process.env.MYSQLHOST);
         throw err;
     }
     console.log('MySQL tilkoblet...');
     console.log('NODE_ENV:', process.env.NODE_ENV);
-    console.log('Tilkobling:', {
-        host: process.env.MYSQLHOST || process.env.DB_HOST,
-        port: process.env.MYSQLPORT || process.env.DB_PORT,
-        user: process.env.MYSQLUSER || process.env.DB_USER,
-        database: process.env.MYSQLDATABASE || process.env.DB_NAME
-    });
+    if (process.env.MYSQL_URL) {
+        console.log('Tilkobling: Using MYSQL_URL connection string');
+    } else {
+        console.log('Tilkobling:', {
+            host: process.env.MYSQLHOST || process.env.DB_HOST,
+            port: process.env.MYSQLPORT || process.env.DB_PORT,
+            user: process.env.MYSQLUSER || process.env.DB_USER,
+            database: process.env.MYSQLDATABASE || process.env.DB_NAME
+        });
+    }
 });
 
 // API-endpoints
