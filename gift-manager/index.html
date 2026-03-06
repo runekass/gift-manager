@@ -545,7 +545,7 @@
             }
 
             gifts.forEach(gift => {
-                const completedStatus = gift.completed ? '⏳ Ledig' : '✓ Fullført';
+                const completedStatus = gift.completed ? '⏳ Tilgjengelig' : '✓ Fullført';
                 const deleteButton = isLoggedIn ? `<button class="btn-delete" onclick="deleteGift(${gift.id})">Slett</button>` : '';
                 giftsList.innerHTML += `
                     <li>
