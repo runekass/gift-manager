@@ -8,6 +8,13 @@
     <title>Premieoversikt</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
+        :root {
+            --norway-red: #ba0c2f;
+            --norway-blue: #00205b;
+            --norway-white: #ffffff;
+            --norway-light: #f3f6ff;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -16,7 +23,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -31,8 +38,8 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
+            color: var(--norway-white);
             padding: 30px;
             text-align: center;
         }
@@ -52,7 +59,7 @@
         }
 
         .form-section {
-            background: #f8f9fa;
+            background: var(--norway-light);
             padding: 25px;
             border-radius: 8px;
             margin-bottom: 30px;
@@ -89,8 +96,8 @@
         .form-group input[type="text"]:focus,
         .form-group input[type="number"]:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--norway-blue);
+            box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.12);
         }
 
         .checkbox-group {
@@ -128,14 +135,14 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
+            color: var(--norway-white);
             flex: 1;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 20px rgba(0, 32, 91, 0.35);
         }
 
         .btn-primary:active {
@@ -143,26 +150,26 @@
         }
 
         .btn-edit {
-            background: #4CAF50;
-            color: white;
+            background: var(--norway-blue);
+            color: var(--norway-white);
             padding: 8px 16px;
             font-size: 0.9em;
         }
 
         .btn-edit:hover {
-            background: #45a049;
+            background: #001a4d;
             transform: translateY(-1px);
         }
 
         .btn-delete {
-            background: #f44336;
-            color: white;
+            background: var(--norway-red);
+            color: var(--norway-white);
             padding: 8px 16px;
             font-size: 0.9em;
         }
 
         .btn-delete:hover {
-            background: #da190b;
+            background: #9f0a26;
             transform: translateY(-1px);
         }
 
@@ -279,14 +286,14 @@
 
         .login-container input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--norway-blue);
+            box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.12);
         }
 
         .login-btn {
             width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
+            color: var(--norway-white);
             padding: 12px;
             border: none;
             border-radius: 6px;
@@ -298,33 +305,33 @@
 
         .login-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 20px rgba(0, 32, 91, 0.35);
         }
 
         /* Logout Button */
         .logout-btn {
-            background: #f44336;
-            color: white;
+            background: var(--norway-red);
+            color: var(--norway-white);
             padding: 8px 16px;
             font-size: 0.9em;
         }
 
         .logout-btn:hover {
-            background: #da190b;
+            background: #9f0a26;
             transform: translateY(-1px);
         }
 
         /* Login Button in Header */
         .login-btn-header {
-            background: white;
-            color: #667eea;
+            background: var(--norway-white);
+            color: var(--norway-blue);
             padding: 8px 16px;
             font-size: 0.9em;
             font-weight: 600;
         }
 
         .login-btn-header:hover {
-            background: #f0f0f0;
+            background: #f0f2ff;
             transform: translateY(-1px);
         }
 
@@ -589,16 +596,4 @@
                 <h2>Dine gaver</h2>
                 <ul id="giftsList"></ul>
             </div>
-        </div>
-    </div>
-
-    <!-- Login Modal -->
-    <div id="loginModal" class="login-modal">
-        <div class="login-container">
-            <h2>Logg inn</h2>
-            <input type="password" id="password" placeholder="Passord" onkeypress="handleKeyPress(event)">
-            <button class="login-btn" onclick="login()">Logg inn</button>
-        </div>
-    </div>
-</body>
-</html>
+        </div
