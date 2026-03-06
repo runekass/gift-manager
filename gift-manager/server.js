@@ -18,20 +18,36 @@ const pool = mysql.createPool({
     port: process.env.DB_PORT,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    database: process.env.DB_NAME,
+    waitForConnections: true,
+    queueLimit: 0
 });
 
 // Test the connection
 pool.getConnection((err, connection) => {
     if (err) {
-        console.error('MySQL connection pool failed:', err);
+        console.error('MySQL connection pool failed:', err.message);
+        console.error('Configuration:', {
+            host: process.env.DB_HOST,
+            port: process.env.DB_PORT,
+            user: process.env.DB_USER,
+            database: process.env.DB_NAME
+        });
     } else {
         console.log('MySQL tilkoblet...');
-        console.log('DB Host:', process.env.DB_HOST);
-        console.log('DB Port:', process.env.DB_PORT);
-        console.log('DB Name:', process.env.DB_NAME);
+        console.log('DB Config:', {
+            host: process.env.DB_HOST,
+            port: process.env.DB_PORT,
+            user: process.env.DB_USER,
+            database: process.env.DB_NAME
+        });
         connection.release();
     }
+});
+
+// Handle pool errors
+pool.on('error', (err) => {
+    console.error('MySQL pool error:', err);
 });
 
 // Helper function to query the database
@@ -39,6 +55,7 @@ function query(sql, values) {
     return new Promise((resolve, reject) => {
         pool.query(sql, values, (err, results) => {
             if (err) {
+                console.error('Query error:', sql, err);
                 reject(err);
             } else {
                 resolve(results);
@@ -74,7 +91,11 @@ app.get('/gifts', async (req, res) => {
         res.json(results);
     } catch (err) {
         console.error('Error fetching gifts:', err);
-        res.status(500).send('Feil ved henting av gaver');
+        res.status(500).json({
+            error: 'Feil ved henting av gaver',
+            message: err.message,
+            code: err.code
+        });
     }
 });
 
