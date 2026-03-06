@@ -31,7 +31,7 @@ app.use((req, res, next) => {
 let db;
 
 if (process.env.MYSQL_URL) {
-    // Use Railway's MYSQL_URL if available (internal connection string)
+    // Use Railway's MYSQL_URL if available (internal connection string) .
     console.log('Using MYSQL_URL connection string');
     db = mysql.createConnection(process.env.MYSQL_URL);
 } else {
