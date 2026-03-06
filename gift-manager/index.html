@@ -544,6 +544,9 @@
                 return;
             }
 
+            // Sort gifts: uncompleted (0) first, then completed (1)
+            gifts.sort((a, b) => a.completed - b.completed);
+
             gifts.forEach(gift => {
                 const completedStatus = gift.completed ? '⏳ Tilgjengelig' : '✓ Fullført';
                 const deleteButton = isLoggedIn ? `<button class="btn-delete" onclick="deleteGift(${gift.id})">Slett</button>` : '';
