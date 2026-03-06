@@ -2,121 +2,66 @@ const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-
-// Only load .env in development, not on Railway (production)
-if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').config();
-}
+require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static(__dirname));
 
-// Ensure no caching issues
-app.use((req, res, next) => {
-    res.header('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.header('Pragma', 'no-cache');
-    res.header('Expires', '0');
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
-    res.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-    res.header('Referrer-Policy', 'no-referrer');
-    next();
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
-// Create database connection
-let db;
-
-if (process.env.MYSQL_URL) {
-    // Use Railway's MYSQL_URL if available (internal connection string) .
-    console.log('Using MYSQL_URL connection string');
-    db = mysql.createConnection(process.env.MYSQL_URL);
-} else {
-    // Fallback to individual variables
-    db = mysql.createConnection({
-        host: process.env.MYSQLHOST || process.env.DB_HOST,
-        port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
-        user: process.env.MYSQLUSER || process.env.DB_USER,
-        password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
-        database: process.env.MYSQLDATABASE || process.env.DB_NAME
+function connectDB() {
+    db.connect(err => {
+        if (err) {
+            console.error('MySQL connection failed:', err);
+            setTimeout(connectDB, 5000);
+        } else {
+            console.log('MySQL tilkoblet...');
+        }
     });
 }
 
-db.connect(err => {
-    if (err) {
-        console.error('Databasefeil:', err.message);
-        if (process.env.MYSQL_URL) {
-            console.error('Using MYSQL_URL (connection string)');
-            console.error('MYSQL_URL:', process.env.MYSQL_URL ? 'SET' : 'NOT SET');
-        } else {
-            console.error('DB Host:', process.env.MYSQLHOST || process.env.DB_HOST);
-            console.error('DB Port:', process.env.MYSQLPORT || process.env.DB_PORT);
-            console.error('DB User:', process.env.MYSQLUSER || process.env.DB_USER);
-            console.error('DB Name:', process.env.MYSQLDATABASE || process.env.DB_NAME);
-        }
-        console.error('NODE_ENV:', process.env.NODE_ENV);
-        throw err;
-    }
-    console.log('MySQL tilkoblet...');
-    console.log('NODE_ENV:', process.env.NODE_ENV);
-    if (process.env.MYSQL_URL) {
-        console.log('Tilkobling: Using MYSQL_URL connection string');
-    } else {
-        console.log('Tilkobling:', {
-            host: process.env.MYSQLHOST || process.env.DB_HOST,
-            port: process.env.MYSQLPORT || process.env.DB_PORT,
-            user: process.env.MYSQLUSER || process.env.DB_USER,
-            database: process.env.MYSQLDATABASE || process.env.DB_NAME
-        });
-    }
-});
+connectDB();
 
-// API-endpoints
+// API-endepunkter
 app.post('/gifts', (req, res) => {
     const { gift_name, giver, price, responsible, completed } = req.body;
 
     // Hent max id og legg til 1
     db.query('SELECT MAX(id) as maxId FROM gifts', (err, results) => {
-        if (err) throw err;
+        if (err) {
+            console.error('Error fetching max id:', err);
+            return res.status(500).send('Feil ved henting av ID');
+        }
 
         const newId = (results[0].maxId || 0) + 1;
         const sql = 'INSERT INTO gifts (id, gift_name, giver, price, responsible, completed) VALUES (?, ?, ?, ?, ?, ?)';
-        db.query(sql, [newId, gift_name, giver, price, responsible, completed], (err, result) => {
-            if (err) throw err;
+        db.query(sql, [newId, gift_name, giver, price, responsible, completed ? 1 : 0], (err, result) => {
+            if (err) {
+                console.error('Error inserting gift:', err);
+                return res.status(500).send('Feil ved innsetting av gave');
+            }
             res.send('Gave lagt til...');
         });
     });
 });
 
 app.get('/gifts', (req, res) => {
-    console.log('GET /gifts - Henter alle gaver');
     db.query('SELECT * FROM gifts', (err, results) => {
         if (err) {
-            console.error('Database feil ved henting av gaver:', err);
-            res.status(500).json({ error: err.message });
-            return;
+            console.error('Error fetching gifts:', err);
+            return res.status(500).send('Feil ved henting av gaver');
         }
-        console.log(`Returnerer ${results.length} gaver`);
         res.json(results);
-    });
-});
-
-app.get('/gifts/:id', (req, res) => {
-    const id = req.params.id;
-    db.query('SELECT * FROM gifts WHERE id = ?', [id], (err, results) => {
-        if (err) {
-            console.error('Database feil ved henting av gave:', err);
-            res.status(500).json({ error: err.message });
-            return;
-        }
-        if (results.length === 0) {
-            res.status(404).json({ error: 'Gave ikke funnet' });
-            return;
-        }
-        res.json(results[0]);
     });
 });
 
@@ -124,8 +69,11 @@ app.put('/gifts/:id', (req, res) => {
     const { gift_name, giver, price, responsible, completed } = req.body;
     const id = req.params.id;
     const sql = 'UPDATE gifts SET gift_name = ?, giver = ?, price = ?, responsible = ?, completed = ? WHERE id = ?';
-    db.query(sql, [gift_name, giver, price, responsible, completed, id], (err, result) => {
-        if (err) throw err;
+    db.query(sql, [gift_name, giver, price, responsible, completed ? 1 : 0, id], (err, result) => {
+        if (err) {
+            console.error('Error updating gift:', err);
+            return res.status(500).send('Feil ved oppdatering av gave');
+        }
         res.send('Gave oppdatert...');
     });
 });
@@ -134,14 +82,16 @@ app.delete('/gifts/:id', (req, res) => {
     const id = req.params.id;
     const sql = 'DELETE FROM gifts WHERE id = ?';
     db.query(sql, [id], (err, result) => {
-        if (err) throw err;
+        if (err) {
+            console.error('Error deleting gift:', err);
+            return res.status(500).send('Feil ved sletting av gave');
+        }
         res.send('Gave slettet...');
     });
 });
 
-// Serve static files AFTER API routes
-app.use(express.static(__dirname));
-
 app.listen(port, () => {
-    console.log(`Server kjører på http://localhost:${port}`);
+    const url = `http://localhost:${port}`;
+    console.log(`Server kjører på port ${port}`);
+    console.log(`Åpne nettleseren her: ${url}`);
 });
