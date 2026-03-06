@@ -459,7 +459,7 @@
                 const result = await response.text();
                 alert(result);
                 editingId = null;
-                document.querySelector('button').textContent = 'Legg til gave';
+                document.querySelector('button').textContent = 'Legg til premie';
             } else {
                 // Legg til ny gave
                 const response = await fetch('/gifts', {
@@ -498,18 +498,18 @@
                         document.getElementById('responsible').value = gift.responsible;
                         document.getElementById('completed').checked = gift.completed;
                         editingId = id;
-                        document.querySelector('button').textContent = 'Oppdater gave';
+                        document.querySelector('button').textContent = 'Oppdater premie';
                     }
                 });
         }
 
         async function deleteGift(id) {
             if (!isLoggedIn) {
-                alert('Du må logge inn for å slette gaver!');
+                alert('Du må logge inn for å slette premier!');
                 showLoginModal();
                 return;
             }
-            if (confirm('Er du sikker på at du vil slette denne gaven?')) {
+            if (confirm('Er du sikker på at du vil slette denne premien?')) {
                 const response = await fetch(`/gifts/${id}`, {
                     method: 'DELETE'
                 });
@@ -527,7 +527,7 @@
             giftsList.innerHTML = '';
 
             if (gifts.length === 0) {
-                giftsList.innerHTML = '<div class="empty-state"><p>Ingen gaver lagt til ennå. Legg til din første gave ovenfor!</p></div>';
+                giftsList.innerHTML = '<div class="empty-state"><p>Ingen premier lagt til ennå. Legg til din første premier ovenfor!</p></div>';
                 return;
             }
 
@@ -574,7 +574,7 @@
         <div class="content">
             <!-- Form Section -->
             <div class="form-section">
-                <h2>Legg til ny gave</h2>
+                <h2>Legg til ny premie</h2>
                 <div class="form-group">
                     <input type="text" id="gift_name" placeholder="Gavenavn" required>
                     <input type="text" id="giver" placeholder="Fra" required>
@@ -588,13 +588,13 @@
                     <label for="completed">Merket som fullført</label>
                 </div>
                 <div class="button-group">
-                    <button class="btn-primary" onclick="addGift()">Legg til gave</button>
+                    <button class="btn-primary" onclick="addGift()">Legg til premier</button>
                 </div>
             </div>
 
             <!-- Gifts List Section -->
             <div class="gifts-section">
-                <h2>Dine gaver</h2>
+                <h2>Premier</h2>
                 <ul id="giftsList"></ul>
             </div>
         </div>
