@@ -150,15 +150,15 @@ app.get('/health', (req, res) => {
 // API-endepunkter
 app.post('/gifts', async (req, res) => {
     try {
-        const { gift_name, giver, price, responsible, completed } = req.body;
+        const { gift_name, giver, contact_person, phone, email, price, responsible, completed } = req.body;
 
         // Hent max id og legg til 1
         const results = await query('SELECT MAX(id) as maxId FROM gifts', []);
         const newId = (results[0].maxId || 0) + 1;
 
         await query(
-            'INSERT INTO gifts (id, gift_name, giver, price, responsible, completed) VALUES (?, ?, ?, ?, ?, ?)',
-            [newId, gift_name, giver, price, responsible, completed ? 1 : 0]
+            'INSERT INTO gifts (id, gift_name, giver, contact_person, phone, email, price, responsible, completed) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [newId, gift_name, giver, contact_person, phone, email, price, responsible, completed ? 1 : 0]
         );
 
         res.send('Gave lagt til...');
@@ -198,12 +198,12 @@ app.get('/gifts/:id', async (req, res) => {
 
 app.put('/gifts/:id', async (req, res) => {
     try {
-        const { gift_name, giver, price, responsible, completed } = req.body;
+        const { gift_name, giver, contact_person, phone, email, price, responsible, completed } = req.body;
         const { id } = req.params;
 
         await query(
-            'UPDATE gifts SET gift_name = ?, giver = ?, price = ?, responsible = ?, completed = ? WHERE id = ?',
-            [gift_name, giver, price, responsible, completed ? 1 : 0, id]
+            'UPDATE gifts SET gift_name = ?, giver = ?, contact_person = ?, phone = ?, email = ?, price = ?, responsible = ?, completed = ? WHERE id = ?',
+            [gift_name, giver, contact_person, phone, email, price, responsible, completed ? 1 : 0, id]
         );
 
         res.send('Gave oppdatert...');

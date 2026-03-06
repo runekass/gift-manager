@@ -86,6 +86,8 @@
 
         .form-group input[type="text"],
         .form-group input[type="number"],
+        .form-group input[type="email"],
+        .form-group input[type="tel"],
         .form-group input[type="checkbox"] {
             padding: 12px;
             border: 2px solid #e0e0e0;
@@ -95,7 +97,9 @@
         }
 
         .form-group input[type="text"]:focus,
-        .form-group input[type="number"]:focus {
+        .form-group input[type="number"]:focus,
+        .form-group input[type="email"]:focus,
+        .form-group input[type="tel"]:focus {
             outline: none;
             border-color: var(--norway-blue);
             box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.12);
@@ -441,6 +445,9 @@
             const gift = {
                 gift_name: document.getElementById('gift_name').value,
                 giver: document.getElementById('giver').value,
+                contact_person: document.getElementById('contact_person').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
                 price: parseFloat(document.getElementById('price').value),
                 responsible: document.getElementById('responsible').value,
                 completed: document.getElementById('completed').checked
@@ -477,6 +484,9 @@
             // Slett skjemaet
             document.getElementById('gift_name').value = '';
             document.getElementById('giver').value = '';
+            document.getElementById('contact_person').value = '';
+            document.getElementById('phone').value = '';
+            document.getElementById('email').value = '';
             document.getElementById('price').value = '';
             document.getElementById('responsible').value = '';
             document.getElementById('completed').checked = false;
@@ -494,6 +504,9 @@
                     if (gift) {
                         document.getElementById('gift_name').value = gift.gift_name;
                         document.getElementById('giver').value = gift.giver;
+                        document.getElementById('contact_person').value = gift.contact_person || '';
+                        document.getElementById('phone').value = gift.phone || '';
+                        document.getElementById('email').value = gift.email || '';
                         document.getElementById('price').value = gift.price;
                         document.getElementById('responsible').value = gift.responsible;
                         document.getElementById('completed').checked = gift.completed;
@@ -527,7 +540,7 @@
             giftsList.innerHTML = '';
 
             if (gifts.length === 0) {
-                giftsList.innerHTML = '<div class="empty-state"><p>Ingen premier lagt til ennå. Legg til din første premier ovenfor!</p></div>';
+                giftsList.innerHTML = '<div class="empty-state"><p>Ingen premier lagt til ennå. Legg til din første premie ovenfor!</p></div>';
                 return;
             }
 
@@ -539,6 +552,9 @@
                         <div class="gift-info">
                             <div><strong>${gift.gift_name}</strong></div>
                             <div>Fra: <strong>${gift.giver}</strong></div>
+                            <div>Kontaktperson: <strong>${gift.contact_person || '-'}</strong></div>
+                            <div>Telefon: <strong>${gift.phone || '-'}</strong></div>
+                            <div>E-post: <strong>${gift.email || '-'}</strong></div>
                             <div>Pris: <strong>${formatPrice(gift.price)}</strong></div>
                             <div>Ansvarlig: <strong>${gift.responsible}</strong></div>
                             <div>Status: <strong>${completedStatus}</strong></div>
@@ -582,6 +598,13 @@
                 <div class="form-group">
                     <input type="number" id="price" placeholder="Pris (kr)" step="0.01" required>
                     <input type="text" id="responsible" placeholder="Ansvarlig" required>
+                </div>
+                <div class="form-group">
+                    <input type="text" id="contact_person" placeholder="Kontaktperson" required>
+                    <input type="tel" id="phone" placeholder="Telefon" required>
+                </div>
+                <div class="form-group full">
+                    <input type="email" id="email" placeholder="E-post" required>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="completed">
