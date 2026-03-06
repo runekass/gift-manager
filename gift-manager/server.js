@@ -2,7 +2,11 @@ const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-require('dotenv').config();
+
+// Only load .env in development, not on Railway (production)
+if (process.env.NODE_ENV !== 'production') {
+    require('dotenv').config();
+}
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -38,9 +42,12 @@ db.connect(err => {
         console.error('DB Port:', process.env.MYSQLPORT || process.env.DB_PORT);
         console.error('DB User:', process.env.MYSQLUSER || process.env.DB_USER);
         console.error('DB Name:', process.env.MYSQLDATABASE || process.env.DB_NAME);
+        console.error('NODE_ENV:', process.env.NODE_ENV);
+        console.error('Using Railway internal:', !process.env.DB_HOST && process.env.MYSQLHOST);
         throw err;
     }
     console.log('MySQL tilkoblet...');
+    console.log('NODE_ENV:', process.env.NODE_ENV);
     console.log('Tilkobling:', {
         host: process.env.MYSQLHOST || process.env.DB_HOST,
         port: process.env.MYSQLPORT || process.env.DB_PORT,
