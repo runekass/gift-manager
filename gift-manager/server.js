@@ -18,6 +18,7 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
     res.header('Referrer-Policy', 'no-referrer');
     next();
 });
@@ -75,6 +76,22 @@ app.get('/gifts', (req, res) => {
         }
         console.log(`Returnerer ${results.length} gaver`);
         res.json(results);
+    });
+});
+
+app.get('/gifts/:id', (req, res) => {
+    const id = req.params.id;
+    db.query('SELECT * FROM gifts WHERE id = ?', [id], (err, results) => {
+        if (err) {
+            console.error('Database feil ved henting av gave:', err);
+            res.status(500).json({ error: err.message });
+            return;
+        }
+        if (results.length === 0) {
+            res.status(404).json({ error: 'Gave ikke funnet' });
+            return;
+        }
+        res.json(results[0]);
     });
 });
 
