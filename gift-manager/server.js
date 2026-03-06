@@ -49,7 +49,7 @@ db.connect(err => {
     });
 });
 
-// API-endepunkter
+// API-endpoints
 app.post('/gifts', (req, res) => {
     const { gift_name, giver, price, responsible, completed } = req.body;
 
