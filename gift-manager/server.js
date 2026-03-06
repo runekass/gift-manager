@@ -11,51 +11,100 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(__dirname));
 
-// Create a connection pool instead of a single connection
-const pool = mysql.createPool({
-    connectionLimit: 10,
-    host: process.env.MYSQLHOST || process.env.DB_HOST,
-    port: process.env.MYSQLPORT || process.env.DB_PORT,
-    user: process.env.MYSQLUSER || process.env.DB_USER,
-    password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
-    database: process.env.MYSQLDATABASE || process.env.DB_NAME,
-    waitForConnections: true,
-    queueLimit: 0
+// Determine which database config to use
+let dbConfig;
+const isProduction = process.env.NODE_ENV === 'production';
+
+if (isProduction) {
+    // On Railway: Try to use internal connection first, fallback to external
+    console.log('Production mode detected');
+    dbConfig = {
+        host: process.env.MYSQLHOST || process.env.DB_HOST,
+        port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+        user: process.env.MYSQLUSER || process.env.DB_USER,
+        password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
+        database: process.env.MYSQLDATABASE || process.env.DB_NAME,
+        connectionTimeout: 20000,
+        enableKeepAlive: true,
+        keepAliveInitialDelayMs: 0
+    };
+} else {
+    // Local development
+    console.log('Development mode detected');
+    dbConfig = {
+        host: process.env.DB_HOST,
+        port: process.env.DB_PORT || 3306,
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_NAME,
+        connectionTimeout: 30000,
+        enableKeepAlive: true,
+        keepAliveInitialDelayMs: 0,
+        waitForConnections: true,
+        connectionLimit: 5
+    };
+}
+
+console.log('Database config:', {
+    host: dbConfig.host,
+    port: dbConfig.port,
+    user: dbConfig.user,
+    database: dbConfig.database
 });
 
-// Test the connection
-pool.getConnection((err, connection) => {
-    if (err) {
-        console.error('MySQL connection pool failed:', err.message);
-        console.error('Configuration:', {
-            host: process.env.MYSQLHOST || process.env.DB_HOST,
-            port: process.env.MYSQLPORT || process.env.DB_PORT,
-            user: process.env.MYSQLUSER || process.env.DB_USER,
-            database: process.env.MYSQLDATABASE || process.env.DB_NAME
-        });
-    } else {
-        console.log('MySQL tilkoblet...');
-        console.log('DB Config:', {
-            host: process.env.MYSQLHOST || process.env.DB_HOST,
-            port: process.env.MYSQLPORT || process.env.DB_PORT,
-            user: process.env.MYSQLUSER || process.env.DB_USER,
-            database: process.env.MYSQLDATABASE || process.env.DB_NAME
-        });
-        connection.release();
-    }
-});
+// Create connection pool
+const pool = mysql.createPool(dbConfig);
+
+// Test connection with retry
+let isConnected = false;
+let connectionAttempts = 0;
+const maxAttempts = 5;
+
+function testConnection() {
+    connectionAttempts++;
+    console.log(`Connection attempt ${connectionAttempts}/${maxAttempts}...`);
+
+    pool.getConnection((err, connection) => {
+        if (err) {
+            console.error('❌ Connection failed:', err.message);
+
+            if (connectionAttempts < maxAttempts) {
+                const delay = Math.min(1000 * Math.pow(2, connectionAttempts - 1), 10000);
+                console.log(`Retrying in ${delay}ms...`);
+                setTimeout(testConnection, delay);
+            } else {
+                console.error('⚠️  Max connection attempts reached.');
+                console.error('The database may be temporarily unavailable.');
+                console.error('The server will continue, but API calls will fail.');
+            }
+        } else {
+            isConnected = true;
+            console.log('✓ MySQL tilkoblet...');
+            connection.release();
+        }
+    });
+}
+
+testConnection();
 
 // Handle pool errors
 pool.on('error', (err) => {
-    console.error('MySQL pool error:', err);
+    console.error('MySQL pool error:', err.message);
+    isConnected = false;
 });
 
 // Helper function to query the database
 function query(sql, values) {
     return new Promise((resolve, reject) => {
+        if (!isConnected) {
+            reject(new Error('Database not connected'));
+            return;
+        }
+
         pool.query(sql, values, (err, results) => {
             if (err) {
-                console.error('Query error:', sql, err);
+                console.error('Query error:', sql);
+                console.error('Error:', err.message);
                 reject(err);
             } else {
                 resolve(results);
@@ -63,6 +112,15 @@ function query(sql, values) {
         });
     });
 }
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        database: isConnected ? 'connected' : 'disconnected',
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
 
 // API-endepunkter
 app.post('/gifts', async (req, res) => {
