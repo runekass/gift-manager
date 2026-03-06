@@ -401,6 +401,11 @@
             return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' }).format(num);
         }
 
+        function isCompletedValue(value) {
+            const normalized = String(value).trim().toLowerCase();
+            return normalized === '1' || normalized === 'true';
+        }
+
         function showLoginModal() {
             document.getElementById('loginModal').classList.add('active');
         }
@@ -502,6 +507,7 @@
                 .then(gifts => {
                     const gift = gifts.find(g => g.id === id);
                     if (gift) {
+                        const isCompleted = isCompletedValue(gift.completed);
                         document.getElementById('gift_name').value = gift.gift_name;
                         document.getElementById('giver').value = gift.giver;
                         document.getElementById('contact_person').value = gift.contact_person || '';
@@ -509,7 +515,7 @@
                         document.getElementById('email').value = gift.email || '';
                         document.getElementById('price').value = gift.price;
                         document.getElementById('responsible').value = gift.responsible;
-                        document.getElementById('completed').checked = gift.completed;
+                        document.getElementById('completed').checked = isCompleted;
                         editingId = id;
                         document.querySelector('button').textContent = 'Oppdater premie';
                     }
@@ -544,11 +550,12 @@
                 return;
             }
 
-            // Sort gifts: uncompleted (0) first, then completed (1)
-            gifts.sort((a, b) => a.completed - b.completed);
+            // Sort gifts: available first, then completed
+            gifts.sort((a, b) => Number(isCompletedValue(a.completed)) - Number(isCompletedValue(b.completed)));
 
             gifts.forEach(gift => {
-                const completedStatus = gift.completed ? '✓ Fullført' : '📣 Tilgjengelig';
+                const isCompleted = isCompletedValue(gift.completed);
+                const completedStatus = isCompleted ? '✓ Fullført' : '📣 Tilgjengelig';
                 const deleteButton = isLoggedIn ? `<button class="btn-delete" onclick="deleteGift(${gift.id})">Slett</button>` : '';
                 giftsList.innerHTML += `
                     <li>
