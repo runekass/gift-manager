@@ -16,18 +16,43 @@ let dbConfig;
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction) {
-    // On Railway: Try to use internal connection first, fallback to external
-    console.log('Production mode detected');
-    dbConfig = {
-        host: process.env.MYSQLHOST || process.env.DB_HOST,
-        port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
-        user: process.env.MYSQLUSER || process.env.DB_USER,
-        password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
-        database: process.env.MYSQLDATABASE || process.env.DB_NAME,
-        connectionTimeout: 20000,
-        enableKeepAlive: true,
-        keepAliveInitialDelayMs: 0
-    };
+    // On Railway: Check if we have MYSQL_URL (preferred) or individual variables
+    if (process.env.MYSQL_URL) {
+        console.log('Using MYSQL_URL connection string');
+        // Parse the URL and extract config
+        try {
+            const url = new URL(process.env.MYSQL_URL);
+            dbConfig = {
+                host: url.hostname,
+                port: url.port || 3306,
+                user: url.username,
+                password: url.password,
+                database: url.pathname.substring(1), // Remove leading /
+                connectionTimeout: 20000,
+                enableKeepAlive: true,
+                keepAliveInitialDelayMs: 0
+            };
+        } catch (e) {
+            console.error('Failed to parse MYSQL_URL:', e.message);
+            dbConfig = null;
+        }
+    }
+
+    // If no MYSQL_URL or parsing failed, use individual variables with fallback
+    if (!dbConfig) {
+        console.log('Using individual database variables (Railway or local)');
+        dbConfig = {
+            // Try Railway MYSQL* variables first, then fall back to DB_* variables
+            host: process.env.MYSQLHOST || process.env.DB_HOST,
+            port: process.env.MYSQLPORT || process.env.DB_PORT || 3306,
+            user: process.env.MYSQLUSER || process.env.DB_USER,
+            password: process.env.MYSQLPASSWORD || process.env.DB_PASSWORD,
+            database: process.env.MYSQLDATABASE || process.env.DB_NAME,
+            connectionTimeout: 20000,
+            enableKeepAlive: true,
+            keepAliveInitialDelayMs: 0
+        };
+    }
 } else {
     // Local development
     console.log('Development mode detected');
