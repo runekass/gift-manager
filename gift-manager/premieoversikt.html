@@ -9,7 +9,7 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <style>
         :root {
-            --norway-red: #3541ff;
+            --norway-red: #853c49;
             --norway-blue: #1d3b7c;
             --norway-white: #ffffff;
             --norway-light: #f6f8ff;
@@ -24,7 +24,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(90deg, #853C49 0%, #2f4f93 100%);
+            background: linear-gradient(90deg, #853c49 0%, #1d3b7c 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -288,24 +288,49 @@
             flex: 1;
             color: #555;
             font-size: 0.95em;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            grid-auto-rows: auto;
+            align-items: start;
+        }
+
+        #giftsList li .gift-info .gift-name {
+            grid-column: 1 / -1;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 2px;
+        }
+
+        #giftsList li .gift-info .gift-field {
             display: flex;
             flex-direction: column;
-            gap: 8px;
         }
 
-        #giftsList li .gift-info strong {
+        #giftsList li .gift-info .gift-field label {
+            font-weight: 600;
             color: #333;
+            font-size: 0.85em;
+            margin-bottom: 4px;
         }
 
-        #giftsList li .gift-info div {
-            display: flex;
+        #giftsList li .gift-info .gift-field span {
+            color: #555;
+        }
+
+        #giftsList li .gift-info .gift-row-last {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
             align-items: center;
         }
 
-        #giftsList li .gift-actions {
+        #giftsList li .gift-info .gift-actions {
             display: flex;
             gap: 8px;
-            margin-left: 15px;
+            justify-content: flex-end;
         }
 
         .empty-state {
@@ -556,7 +581,7 @@
                     const result = await response.text();
                     alert(result);
                     editingId = null;
-                    document.querySelector('button').textContent = 'Legg til premie';
+                    document.getElementById('giftActionBtn').textContent = 'Legg til premie';
                 } else {
                     const response = await fetch('/gifts', {
                         method: 'POST',
@@ -603,7 +628,7 @@
                         document.getElementById('responsible').value = gift.responsible;
                         document.getElementById('completed').checked = isCompleted;
                         editingId = id;
-                        document.querySelector('button').textContent = 'Oppdater premie';
+                        document.getElementById('giftActionBtn').textContent = 'Lagre premie';
                     }
                 });
         }
@@ -694,18 +719,35 @@
                 giftsList.innerHTML += `
                     <li>
                         <div class="gift-info">
-                            <div><strong>${gift.gift_name}</strong></div>
-                            <div>Fra: <strong>${gift.giver}</strong></div>
-                            <div>Kontaktperson: <strong>${gift.contact_person || '-'}</strong></div>
-                            <div>Telefon: <strong>${gift.phone || '-'}</strong></div>
-                            <div>E-post: <strong>${gift.email || '-'}</strong></div>
-                            <div>Pris: <strong>${formatPrice(gift.price)}</strong></div>
-                            <div>Ansvarlig: <strong>${gift.responsible}</strong></div>
-                            <div>Status: <strong>${completedStatus}</strong></div>
-                        </div>
-                        <div class="gift-actions">
-                            <button class="btn-edit" onclick="editGift(${gift.id})">Rediger</button>
-                            ${deleteButton}
+                            <div class="gift-name"><strong>${gift.gift_name}</strong></div>
+
+                            <div class="gift-field">
+                                <label>Fra</label>
+                                <span>${gift.giver}</span>
+                            </div>
+                            <div class="gift-field">
+                                <label>Pris</label>
+                                <span>${formatPrice(gift.price)}</span>
+                            </div>
+                            <div class="gift-field">
+                                <label>Kontakt</label>
+                                <span>${gift.contact_person || '-'}${gift.phone ? `, ${gift.phone}` : ''}${gift.email ? `, ${gift.email}` : ''}</span>
+                            </div>
+
+                            <div class="gift-row-last">
+                                <div class="gift-field">
+                                    <label>Ansvarlig</label>
+                                    <span>${gift.responsible}</span>
+                                </div>
+                                <div class="gift-field">
+                                    <label>Status</label>
+                                    <span>${completedStatus}</span>
+                                </div>
+                                <div class="gift-actions">
+                                    <button class="btn-edit" onclick="editGift(${gift.id})">Rediger</button>
+                                    ${deleteButton}
+                                </div>
+                            </div>
                         </div>
                     </li>
                 `;
@@ -769,7 +811,7 @@
                     <label for="completed">Merket som fullført</label>
                 </div>
                 <div class="button-group">
-                    <button class="btn-primary" onclick="addGift()">Legg til premie</button>
+                    <button id="giftActionBtn" class="btn-primary" onclick="addGift()">Legg til premie</button>
                 </div>
             </div>
 
