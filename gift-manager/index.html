@@ -15,10 +15,11 @@
       --norway-light: #f6f8ff;
       --norway-soft-shadow: rgba(31, 59, 122, 0.22);
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(90deg, #853C49 0%, #2f4f93 100%);
+      background: linear-gradient(90deg, #853c49 0%, #1d3b7c 100%);
       min-height: 100vh;
       padding: 20px;
     }
@@ -32,7 +33,7 @@
     }
     .header {
       background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
-      color: #fff;
+      color: var(--norway-white);
       padding: 24px 30px;
     }
     .header h1 { font-size: 2rem; margin-bottom: 8px; }
@@ -103,7 +104,7 @@
     }
     .btn-primary {
       background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
-      color: #fff;
+      color: var(--norway-white);
       border: none;
       padding: 12px 16px;
       border-radius: 6px;
@@ -114,6 +115,30 @@
     .btn-primary:hover {
       transform: translateY(-2px);
       box-shadow: 0 5px 18px var(--norway-soft-shadow);
+    }
+    .btn-edit {
+      background: var(--norway-blue);
+      color: var(--norway-white);
+      border: none;
+      padding: 10px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-edit:hover {
+      background: #1a2e6d;
+    }
+    .btn-delete {
+      background: var(--norway-red);
+      color: var(--norway-white);
+      border: none;
+      padding: 10px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .btn-delete:hover {
+      background: #9f0a26;
     }
     .status {
       margin-top: 10px;
@@ -138,7 +163,7 @@
   <div class="container">
     <div class="header">
       <h1>17. mai Arrangementsportal</h1>
-      <p>Velkommen! Her finner du informasjon om 17. mai arrangementet 2026</p>
+      <p>Velkommen! Her finner du informasjon om 17. mai-arrangementet 2026</p>
       <div class="nav">
         <div class="nav-left">
           <a href="/">Hjem</a>
