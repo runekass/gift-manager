@@ -2,6 +2,8 @@ const express = require('express');
 const mysql = require('mysql2');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
@@ -138,6 +140,52 @@ function query(sql, values) {
     });
 }
 
+function createSessionToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+async function authRequired(req, res, next) {
+    try {
+        const authHeader = req.headers.authorization || '';
+        const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+        if (!token) {
+            return res.status(401).json({ error: 'Ikke innlogget' });
+        }
+
+        const rows = await query(
+            `SELECT us.token, us.expires_at, u.id, u.username, u.role
+             FROM user_sessions us
+             JOIN users u ON u.id = us.user_id
+             WHERE us.token = ?`,
+            [token]
+        );
+
+        if (!rows.length) {
+            return res.status(401).json({ error: 'Ugyldig sesjon' });
+        }
+
+        const session = rows[0];
+        const now = new Date();
+        const expiresAt = new Date(session.expires_at);
+        if (expiresAt < now) {
+            await query('DELETE FROM user_sessions WHERE token = ?', [token]);
+            return res.status(401).json({ error: 'Sesjon utløpt' });
+        }
+
+        req.user = { id: session.id, username: session.username, token, role: session.role };
+        next();
+    } catch (err) {
+        res.status(500).json({ error: 'Autentisering feilet' });
+    }
+}
+
+function adminRequired(req, res, next) {
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: 'Kun admins kan gjøre dette' });
+    }
+    next();
+}
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     res.json({
@@ -147,8 +195,65 @@ app.get('/health', (req, res) => {
     });
 });
 
+/* -------- Auth endpoints -------- */
+
+app.post('/auth/login', async (req, res) => {
+    try {
+        const { username, password, remember } = req.body;
+        if (!username || !password) {
+            return res.status(400).json({ error: 'Brukernavn og passord er påkrevd' });
+        }
+
+        const users = await query(
+            'SELECT id, username, password_hash, role FROM users WHERE username = ?',
+            [username]
+        );
+
+        if (!users.length) {
+            return res.status(401).json({ error: 'Feil brukernavn eller passord' });
+        }
+
+        const user = users[0];
+        const ok = await bcrypt.compare(password, user.password_hash);
+        if (!ok) {
+            return res.status(401).json({ error: 'Feil brukernavn eller passord' });
+        }
+
+        const token = createSessionToken();
+        const days = remember ? 30 : 1;
+        const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+
+        await query(
+            'INSERT INTO user_sessions (user_id, token, expires_at) VALUES (?, ?, ?)',
+            [user.id, token, expiresAt]
+        );
+
+        res.json({
+            token,
+            user: { id: user.id, username: user.username, role: user.role },
+            expiresAt
+        });
+    } catch (err) {
+        console.error('Login error:', err.message);
+        res.status(500).json({ error: 'Innlogging feilet', details: err.message });
+    }
+});
+
+app.get('/auth/me', authRequired, async (req, res) => {
+    res.json({ user: req.user });
+});
+
+app.post('/auth/logout', authRequired, async (req, res) => {
+    try {
+        await query('DELETE FROM user_sessions WHERE token = ?', [req.user.token]);
+        res.json({ ok: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Utlogging feilet' });
+    }
+});
+
 // API-endepunkter
-app.post('/gifts', async (req, res) => {
+app.post('/gifts', authRequired, async (req, res) => {
     try {
         const { gift_name, giver, contact_person, phone, email, price, responsible, completed } = req.body;
 
@@ -168,7 +273,7 @@ app.post('/gifts', async (req, res) => {
     }
 });
 
-app.get('/gifts', async (req, res) => {
+app.get('/gifts', authRequired, async (req, res) => {
     try {
         const results = await query('SELECT * FROM gifts', []);
         res.json(results);
@@ -182,7 +287,7 @@ app.get('/gifts', async (req, res) => {
     }
 });
 
-app.get('/gifts/:id', async (req, res) => {
+app.get('/gifts/:id', authRequired, async (req, res) => {
     try {
         const { id } = req.params;
         const results = await query('SELECT * FROM gifts WHERE id = ?', [id]);
@@ -196,7 +301,7 @@ app.get('/gifts/:id', async (req, res) => {
     }
 });
 
-app.put('/gifts/:id', async (req, res) => {
+app.put('/gifts/:id', authRequired, async (req, res) => {
     try {
         const { gift_name, giver, contact_person, phone, email, price, responsible, completed } = req.body;
         const { id } = req.params;
@@ -213,7 +318,7 @@ app.put('/gifts/:id', async (req, res) => {
     }
 });
 
-app.delete('/gifts/:id', async (req, res) => {
+app.delete('/gifts/:id', authRequired, adminRequired, async (req, res) => {
     try {
         const { id } = req.params;
         await query('DELETE FROM gifts WHERE id = ?', [id]);
