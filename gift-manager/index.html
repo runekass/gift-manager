@@ -1,645 +1,295 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nb">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="no-referrer">
-    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
-    <title>Premieoversikt</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <style>
-        :root {
-            --norway-red: #c65a6e;
-            --norway-blue: #1d3b7c;
-            --norway-white: #ffffff;
-            --norway-light: #f6f8ff;
-            --norway-soft-shadow: rgba(31, 59, 122, 0.22);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #d85a6e 0%, #2f4f93 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
-            color: var(--norway-white);
-            padding: 30px;
-            text-align: center;
-        }
-
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-
-        .content {
-            padding: 30px;
-        }
-
-        .form-section {
-            background: var(--norway-light);
-            padding: 25px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            border: 1px solid #e0e0e0;
-        }
-
-        .form-section h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.3em;
-        }
-
-        .form-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .form-group.full {
-            grid-template-columns: 1fr;
-        }
-
-        .form-group input[type="text"],
-        .form-group input[type="number"],
-        .form-group input[type="email"],
-        .form-group input[type="tel"],
-        .form-group input[type="checkbox"] {
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 1em;
-            transition: border-color 0.3s;
-        }
-
-        .form-group input[type="text"]:focus,
-        .form-group input[type="number"]:focus,
-        .form-group input[type="email"]:focus,
-        .form-group input[type="tel"]:focus {
-            outline: none;
-            border-color: var(--norway-blue);
-            box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.12);
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-        }
-
-        .checkbox-group label {
-            cursor: pointer;
-            color: #333;
-            font-weight: 500;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-        }
-
-        button {
-            padding: 12px 30px;
-            border: none;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
-            color: var(--norway-white);
-            flex: 1;
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 18px var(--norway-soft-shadow);
-        }
-
-        .btn-primary:active {
-            transform: translateY(0);
-        }
-
-        .btn-edit {
-            background: var(--norway-blue);
-            color: var(--norway-white);
-            padding: 8px 16px;
-            font-size: 0.9em;
-        }
-
-        .btn-edit:hover {
-            background: #001a4d;
-            transform: translateY(-1px);
-        }
-
-        .btn-delete {
-            background: var(--norway-red);
-            color: var(--norway-white);
-            padding: 8px 16px;
-            font-size: 0.9em;
-        }
-
-        .btn-delete:hover {
-            background: #9f0a26;
-            transform: translateY(-1px);
-        }
-
-        .gift-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .gifts-section h2 {
-            color: #333;
-            margin-bottom: 20px;
-            font-size: 1.3em;
-        }
-
-        #giftsList {
-            list-style: none;
-        }
-
-        #giftsList li {
-            background: white;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-
-        #giftsList li:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transform: translateX(4px);
-        }
-
-        #giftsList li .gift-info {
-            flex: 1;
-            color: #555;
-            font-size: 0.95em;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        #giftsList li .gift-info strong {
-            color: #333;
-        }
-
-        #giftsList li .gift-info div {
-            display: flex;
-            align-items: center;
-        }
-
-        #giftsList li .gift-actions {
-            display: flex;
-            gap: 8px;
-            margin-left: 15px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #999;
-        }
-
-        .empty-state p {
-            font-size: 1.1em;
-        }
-
-        /* Login Modal Styles */
-        .login-modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.6);
-        }
-
-        .login-modal.active {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .login-container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            width: 90%;
-            max-width: 400px;
-        }
-
-        .login-container h2 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 1.8em;
-        }
-
-        .login-container input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            font-size: 1em;
-            box-sizing: border-box;
-        }
-
-        .login-container input:focus {
-            outline: none;
-            border-color: var(--norway-blue);
-            box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.12);
-        }
-
-        .login-btn {
-            width: 100%;
-            background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
-            color: var(--norway-white);
-            padding: 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 18px var(--norway-soft-shadow);
-        }
-
-        /* Logout Button */
-        .logout-btn {
-            background: var(--norway-red);
-            color: var(--norway-white);
-            padding: 8px 16px;
-            font-size: 0.9em;
-        }
-
-        .logout-btn:hover {
-            background: #9f0a26;
-            transform: translateY(-1px);
-        }
-
-        /* Login Button in Header */
-        .login-btn-header {
-            background: var(--norway-white);
-            color: var(--norway-blue);
-            padding: 8px 16px;
-            font-size: 0.9em;
-            font-weight: 600;
-        }
-
-        .login-btn-header:hover {
-            background: #f0f2ff;
-            transform: translateY(-1px);
-        }
-
-        .header-actions {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-        }
-
-        .header {
-            position: relative;
-        }
-
-        @media (max-width: 768px) {
-            .form-group {
-                grid-template-columns: 1fr;
-            }
-
-            .header h1 {
-                font-size: 2em;
-            }
-
-            #giftsList li {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            #giftsList li .gift-info {
-                margin-bottom: 10px;
-                width: 100%;
-            }
-
-            .gift-actions {
-                width: 100%;
-            }
-
-            .gift-actions button {
-                flex: 1;
-            }
-
-            .header-actions {
-                position: static;
-                margin-top: 15px;
-                display: flex;
-                justify-content: center;
-                gap: 10px;
-            }
-
-            .header {
-                text-align: center;
-            }
-        }
-    </style>
-    <script>
-        let editingId = null;
-        let isLoggedIn = false;
-        const ADMIN_PASSWORD = 'admin123'; // Simple password - consider making this more secure for sure
-
-        // Helper to format price in Norwegian kroner
-        function formatPrice(value) {
-            const num = Number(value) || 0;
-            return new Intl.NumberFormat('nb-NO', { style: 'currency', currency: 'NOK' }).format(num);
-        }
-
-        function isCompletedValue(value) {
-            const normalized = String(value).trim().toLowerCase();
-            return normalized === '1' || normalized === 'true';
-        }
-
-        function showLoginModal() {
-            document.getElementById('loginModal').classList.add('active');
-        }
-
-        function hideLoginModal() {
-            document.getElementById('loginModal').classList.remove('active');
-        }
-
-        function login() {
-            const password = document.getElementById('password').value;
-            if (password === ADMIN_PASSWORD) {
-                isLoggedIn = true;
-                hideLoginModal();
-                document.getElementById('password').value = '';
-                document.getElementById('loginBtn').style.display = 'none';
-                document.getElementById('logoutBtn').style.display = 'inline-block';
-                loadGifts();
-                alert('Innlogget!');
-            } else {
-                alert('Feil passord!');
-                document.getElementById('password').value = '';
-            }
-        }
-
-        function logout() {
-            isLoggedIn = false;
-            document.getElementById('loginBtn').style.display = 'inline-block';
-            document.getElementById('logoutBtn').style.display = 'none';
-            loadGifts();
-            alert('Du er nå logget ut');
-        }
-
-        // Allow login with Enter key
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                login();
-            }
-        }
-
-
-        async function addGift() {
-            const gift = {
-                gift_name: document.getElementById('gift_name').value,
-                giver: document.getElementById('giver').value,
-                contact_person: document.getElementById('contact_person').value,
-                phone: document.getElementById('phone').value,
-                email: document.getElementById('email').value,
-                price: parseFloat(document.getElementById('price').value),
-                responsible: document.getElementById('responsible').value,
-                completed: document.getElementById('completed').checked
-            };
-
-            if (editingId) {
-                // Oppdater eksisterende gave
-                const response = await fetch(`/gifts/${editingId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(gift)
-                });
-
-                const result = await response.text();
-                alert(result);
-                editingId = null;
-                document.querySelector('button').textContent = 'Legg til premie';
-            } else {
-                // Legg til ny gave
-                const response = await fetch('/gifts', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(gift)
-                });
-
-                const result = await response.text();
-                alert(result);
-            }
-
-            // Slett skjemaet
-            document.getElementById('gift_name').value = '';
-            document.getElementById('giver').value = '';
-            document.getElementById('contact_person').value = '';
-            document.getElementById('phone').value = '';
-            document.getElementById('email').value = '';
-            document.getElementById('price').value = '';
-            document.getElementById('responsible').value = '';
-            document.getElementById('completed').checked = false;
-
-            // Last inn gavene på nytt
-            loadGifts();
-        }
-
-        function editGift(id) {
-            // Finn gaven og fyll inn skjemaet
-            fetch('/gifts')
-                .then(response => response.json())
-                .then(gifts => {
-                    const gift = gifts.find(g => g.id === id);
-                    if (gift) {
-                        const isCompleted = isCompletedValue(gift.completed);
-                        document.getElementById('gift_name').value = gift.gift_name;
-                        document.getElementById('giver').value = gift.giver;
-                        document.getElementById('contact_person').value = gift.contact_person || '';
-                        document.getElementById('phone').value = gift.phone || '';
-                        document.getElementById('email').value = gift.email || '';
-                        document.getElementById('price').value = gift.price;
-                        document.getElementById('responsible').value = gift.responsible;
-                        document.getElementById('completed').checked = isCompleted;
-                        editingId = id;
-                        document.querySelector('button').textContent = 'Oppdater premie';
-                    }
-                });
-        }
-
-        async function deleteGift(id) {
-            if (!isLoggedIn) {
-                alert('Du må logge inn for å slette premier!');
-                showLoginModal();
-                return;
-            }
-            if (confirm('Er du sikker på at du vil slette denne premien?')) {
-                const response = await fetch(`/gifts/${id}`, {
-                    method: 'DELETE'
-                });
-
-                const result = await response.text();
-                alert(result);
-                loadGifts();
-            }
-        }
-
-        async function loadGifts() {
-            const response = await fetch('/gifts');
-            const gifts = await response.json();
-            const giftsList = document.getElementById('giftsList');
-            giftsList.innerHTML = '';
-
-            if (gifts.length === 0) {
-                giftsList.innerHTML = '<div class="empty-state"><p>Ingen premier lagt til ennå. Legg til din første premie ovenfor!</p></div>';
-                return;
-            }
-
-            // Sort gifts: available first, then completed
-            gifts.sort((a, b) => Number(isCompletedValue(a.completed)) - Number(isCompletedValue(b.completed)));
-
-            gifts.forEach(gift => {
-                const isCompleted = isCompletedValue(gift.completed);
-                const completedStatus = isCompleted ? '✓ Fullført' : '📣 Tilgjengelig';
-                const deleteButton = isLoggedIn ? `<button class="btn-delete" onclick="deleteGift(${gift.id})">Slett</button>` : '';
-                giftsList.innerHTML += `
-                    <li>
-                        <div class="gift-info">
-                            <div><strong>${gift.gift_name}</strong></div>
-                            <div>Fra: <strong>${gift.giver}</strong></div>
-                            <div>Kontaktperson: <strong>${gift.contact_person || '-'}</strong></div>
-                            <div>Telefon: <strong>${gift.phone || '-'}</strong></div>
-                            <div>E-post: <strong>${gift.email || '-'}</strong></div>
-                            <div>Pris: <strong>${formatPrice(gift.price)}</strong></div>
-                            <div>Ansvarlig: <strong>${gift.responsible}</strong></div>
-                            <div>Status: <strong>${completedStatus}</strong></div>
-                        </div>
-                        <div class="gift-actions">
-                            <button class="btn-edit" onclick="editGift(${gift.id})">Rediger</button>
-                            ${deleteButton}
-                        </div>
-                    </li>
-                `;
-            });
-        }
-
-        window.onload = function() {
-            console.log('App loaded');
-            console.log('Current URL:', window.location.href);
-            console.log('Protocol:', window.location.protocol);
-            loadGifts();
-        };
-    </script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
+  <title>Hjem - 17. mai Arrangementsportal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <style>
+    :root {
+      --norway-red: #853c49;
+      --norway-blue: #1d3b7c;
+      --norway-white: #ffffff;
+      --norway-light: #f6f8ff;
+      --norway-soft-shadow: rgba(31, 59, 122, 0.22);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(90deg, #853C49 0%, #2f4f93 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
+      color: #fff;
+      padding: 24px 30px;
+    }
+    .header h1 { font-size: 2rem; margin-bottom: 8px; }
+    .header p { opacity: 0.9; }
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .nav-left {
+      display: flex;
+      gap: 12px;
+    }
+    .nav a, .nav button {
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      background: #fff;
+      color: var(--norway-blue);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    .nav button:hover, .nav a:hover {
+      background: #f0f2ff;
+    }
+    .content { padding: 30px; }
+    .card {
+      background: var(--norway-light);
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .card h2 { margin-bottom: 10px; color: #333; }
+    .muted { color: #555; line-height: 1.5; }
+    .login-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .login-grid.full { grid-template-columns: 1fr; }
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--norway-blue);
+      box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.12);
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #333;
+      cursor: pointer;
+    }
+    .checkbox-label input {
+      width: auto;
+      margin: 0;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
+      color: #fff;
+      border: none;
+      padding: 12px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      width: 100%;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 18px var(--norway-soft-shadow);
+    }
+    .status {
+      margin-top: 10px;
+      font-size: 0.95rem;
+      color: #333;
+    }
+    .role-badge {
+      display: inline-block;
+      background: var(--norway-blue);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      margin-left: 8px;
+    }
+    @media (max-width: 768px) {
+      .login-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🏆 Premieoversikt</h1>
-            <p>Gaver og premier i forbindelse med 17. mai 2026</p>
-            <div class="header-actions">
-                <button id="loginBtn" class="login-btn-header" onclick="showLoginModal()" style="display: inline-block;">Logg inn</button>
-                <button id="logoutBtn" class="logout-btn" onclick="logout()" style="display: none;">Logg ut</button>
-            </div>
+  <div class="container">
+    <div class="header">
+      <h1>17. mai Arrangementsportal</h1>
+      <p>Velkommen! Her finner du informasjon om 17. mai arrangementet 2026</p>
+      <div class="nav">
+        <div class="nav-left">
+          <a href="/">Hjem</a>
+          <a href="/premieoversikt.html">Premieoversikt</a>
         </div>
-
-        <div class="content">
-            <!-- Form Section -->
-            <div class="form-section">
-                <h2>Legg til ny premie</h2>
-                <div class="form-group">
-                    <input type="text" id="giver" placeholder="Firma" required>
-                    <input type="text" id="gift_name" placeholder="Premie" required>
-                </div>
-                <div class="form-group">
-                    <input type="number" id="price" placeholder="Pris (kr)" step="0.01" required>
-                    <input type="text" id="responsible" placeholder="Ansvarlig" required>
-                </div>
-                <div class="form-group">
-                    <input type="text" id="contact_person" placeholder="Kontaktperson" required>
-                    <input type="tel" id="phone" placeholder="Telefon" required>
-                </div>
-                <div class="form-group full">
-                    <input type="email" id="email" placeholder="E-post" required>
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="completed">
-                    <label for="completed">Merket som fullført</label>
-                </div>
-                <div class="button-group">
-                    <button class="btn-primary" onclick="addGift()">Legg til premie</button>
-                </div>
-            </div>
-
-            <!-- Gifts List Section -->
-            <div class="gifts-section">
-                <h2>Premier</h2>
-                <ul id="giftsList"></ul>
-            </div>
-        </div>
-
-        <!-- Login Modal [Should be stored in db-->
-        <div class="login-modal" id="loginModal">
-            <div class="login-container">
-                <h2>Admin Innlogging</h2>
-                <input type="password" id="password" placeholder="Passord" onkeypress="handleKeyPress(event)">
-                <button class="login-btn" onclick="login()">Logg inn</button>
-            </div>
-        </div>
+        <button id="logoutBtn" style="display:none;">Logg ut</button>
+      </div>
     </div>
+
+    <div class="content">
+      <div class="card">
+        <h2>Om siden</h2>
+        <p class="muted">
+          Denne siden brukes til å samle informasjon og forberedelser til 17. mai-arrangementet 2026.
+          Gå til <strong>Premieoversikt</strong> fra menyen over for å se og administrere premier.
+        </p>
+      </div>
+
+      <div class="card" id="loginCard">
+        <h2>Innlogging</h2>
+        <p class="muted">Logg inn for å aktivere admin-funksjoner. Du kan velge å bli husket.</p>
+        <div class="login-grid">
+          <input id="username" type="text" placeholder="Brukernavn" />
+          <input id="password" type="password" placeholder="Passord" />
+        </div>
+        <div class="login-grid full">
+          <label class="checkbox-label">
+            <input id="remember" type="checkbox" checked />
+            Husk meg i 30 dager
+          </label>
+        </div>
+        <div class="login-grid full">
+          <button class="btn-primary" id="loginBtn">Logg inn</button>
+        </div>
+        <div class="status" id="loginStatus"></div>
+      </div>
+
+      <div class="card" id="userCard" style="display:none;">
+        <h2>Innlogget</h2>
+        <p class="muted">
+          Du er innlogget som <strong id="whoami"></strong><span id="roleSpan" class="role-badge"></span>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TOKEN_KEY = 'gm_auth_token';
+
+    function setStatus(msg, isError = false) {
+      const el = document.getElementById('loginStatus');
+      el.textContent = msg;
+      el.style.color = isError ? '#9f0a26' : '#1d3b7c';
+    }
+
+    function setLoggedInUI(user) {
+      document.getElementById('loginCard').style.display = 'none';
+      document.getElementById('userCard').style.display = 'block';
+      document.getElementById('logoutBtn').style.display = 'inline-block';
+      document.getElementById('whoami').textContent = user.username;
+      document.getElementById('roleSpan').textContent = user.role === 'admin' ? 'Admin' : 'Bruker';
+      document.getElementById('roleSpan').style.background = user.role === 'admin' ? '#9f0a26' : '#1d3b7c';
+    }
+
+    function setLoggedOutUI() {
+      document.getElementById('loginCard').style.display = 'block';
+      document.getElementById('userCard').style.display = 'none';
+      document.getElementById('logoutBtn').style.display = 'none';
+      document.getElementById('whoami').textContent = '';
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+    }
+
+    async function login() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const remember = document.getElementById('remember').checked;
+
+      if (!username || !password) {
+        setStatus('Skriv inn brukernavn og passord.', true);
+        return;
+      }
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, remember })
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          setStatus(data.error || 'Innlogging feilet.', true);
+          return;
+        }
+
+        localStorage.setItem(TOKEN_KEY, data.token);
+        setLoggedInUI(data.user);
+        setStatus('Innlogging vellykket!');
+        document.getElementById('password').value = '';
+      } catch (e) {
+        setStatus('Kunne ikke kontakte serveren.', true);
+      }
+    }
+
+    async function loadSession() {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        setLoggedOutUI();
+        return;
+      }
+
+      try {
+        const res = await fetch('/auth/me', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+          localStorage.removeItem(TOKEN_KEY);
+          setLoggedOutUI();
+          return;
+        }
+
+        const data = await res.json();
+        setLoggedInUI(data.user);
+      } catch (e) {
+        setLoggedOutUI();
+      }
+    }
+
+    async function logout() {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (token) {
+        try {
+          await fetch('/auth/logout', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+          });
+        } catch (_) {}
+      }
+      localStorage.removeItem(TOKEN_KEY);
+      setLoggedOutUI();
+      setStatus('Du er logget ut.');
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', login);
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('password').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') login();
+    });
+    window.addEventListener('load', loadSession);
+  </script>
 </body>
 </html>
