@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Innlogging</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-container {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--text-primary);
+            font-size: 28px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h1>Innlogging</h1>
+
+    <div id="message" class="message"></div>
+
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="username">Brukernavn</label>
+            <input type="text" id="username" placeholder="Skriv inn brukernavn" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Passord</label>
+            <input type="password" id="password" placeholder="Skriv inn passord" required>
+        </div>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="remember">
+            <label for="remember">Husk meg</label>
+        </div>
+
+        <button type="submit">Logg inn</button>
+
+        <div id="loading" class="loading">
+            <p>Logger inn...</p>
+        </div>
+    </form>
+</div>
+
+<script>
+    const API_URL = window.location.origin;
+    const TOKEN_KEY = 'gm_auth_token';
+
+    // Check if already logged in
+    function checkAuth() {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (token) {
+            window.location.href = 'index.html';
+        }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        const remember = document.getElementById('remember').checked;
+
+        if (!username || !password) {
+            showMessage('Brukernavn og passord er påkrevd', 'error');
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await fetch(`${API_URL}/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, remember })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Innlogging feilet');
+            }
+
+            const data = await response.json();
+            localStorage.setItem(TOKEN_KEY, data.token);
+            showMessage('Innlogging vellykket', 'success');
+
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 1000);
+        } catch (err) {
+            showMessage(err.message, 'error');
+            setLoading(false);
+        }
+    });
+
+    function showMessage(msg, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.className = `message ${type}`;
+        messageDiv.textContent = msg;
+    }
+
+    function setLoading(active) {
+        document.getElementById('loading').classList.toggle('active', active);
+        document.getElementById('loginForm').style.display = active ? 'none' : 'block';
+    }
+
+    // Check auth on page load
+    checkAuth();
+</script>
+</body>
+</html>
+
+

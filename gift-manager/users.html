@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brukeradministrasjon</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(90deg, #853c49 0%, #1d3b7c 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #853c49 0%, #1d3b7c 100%);
+            color: #fff;
+            padding: 24px 30px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .nav-left {
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-left:last-child {
+            margin-left: auto;
+        }
+
+        nav a, nav button {
+            text-decoration: none;
+            border: 2px solid #fff;
+            cursor: pointer;
+            background: #fff;
+            color: #1d3b7c;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        nav a:hover, nav button:hover {
+            background: #f0f2ff;
+            border-color: #1d3b7c;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            color: #1d3b7c;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+            border: 2px solid #fff;
+            background: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .profile-button:hover {
+            background: #f0f2ff;
+            border-color: #1d3b7c;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            color: #333;
+            font-size: 28px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        thead {
+            background: #ecf0f1;
+            border-bottom: 2px solid #bdc3c7;
+        }
+
+        th {
+            padding: 12px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .avatar-cell {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar-thumb {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            padding: 30px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            color: #2c3e50;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .avatar-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .avatar-option {
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .avatar-option:hover {
+            border-color: #3498db;
+        }
+
+        .avatar-option.selected {
+            border-color: #3498db;
+            background: #ecf0f1;
+        }
+
+        .avatar-option img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .error {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Brukeradministrasjon</h1>
+        <nav>
+            <button class="hamburger-menu" id="hamburgerMenu">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <div class="nav-menu mobile" id="mobileNav">
+              <a href="/">Hjem</a>
+              <a href="/premieoversikt.html">Premieoversikt</a>
+              <a href="/todos.html">Todos</a>
+              <a href="/users.html">Brukeradmin</a>
+            </div>
+            <div class="nav-left user-menu" id="userMenuContainer">
+              <button class="user-menu-btn" id="userMenuBtn" style="display:none;">
+                <img src="" alt="Profile" class="user-menu-avatar" id="userMenuAvatar">
+                <span id="userMenuUsername">...</span>
+                <span>▼</span>
+              </button>
+              <div class="user-menu-dropdown" id="userMenuDropdown">
+                <a href="/profile.html">Min profil</a>
+                <button id="userMenuLogout">Logg ut</button>
+              </div>
+              <a href="/login.html" class="user-menu-btn" id="userMenuLoginBtn" style="display:none;">
+                Logg inn
+              </a>
+            </div>
+        </nav>
+    </div>
+
+    <div class="content">
+        <div id="message"></div>
+
+    <div class="controls">
+        <button class="btn-primary" onclick="openCreateModal()">+ Opprett bruker</button>
+    </div>
+
+    <div id="usersList">Laster brukere...</div>
+</div>
+
+<!-- Create/Edit User Modal -->
+<div id="userModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Opprett ny bruker</h2>
+        </div>
+
+        <form id="userForm">
+            <div class="form-group">
+                <label>Brukernavn *</label>
+                <input type="text" id="username" placeholder="brukernavn" required>
+                <div id="usernameError" class="error"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Fornavn</label>
+                <input type="text" id="firstName" placeholder="Ola">
+            </div>
+
+            <div class="form-group">
+                <label>Etternavn</label>
+                <input type="text" id="lastName" placeholder="Nordmann">
+            </div>
+
+            <div class="form-group">
+                <label>E-post *</label>
+                <input type="email" id="email" placeholder="ola@example.com" required>
+                <div id="emailError" class="error"></div>
+            </div>
+
+            <div class="form-group">
+                <label>Rolle *</label>
+                <select id="role" required>
+                    <option value="user">Bruker</option>
+                    <option value="admin">Administrator</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Velg avatar</label>
+                <div class="avatar-options" id="avatarOptions"></div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeUserModal()">Avbryt</button>
+                <button type="submit" class="btn-primary">Lagre</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const API_URL = window.location.origin;
+    const TOKEN_KEY = 'gm_auth_token';
+    let currentUserId = null;
+
+    async function getToken() {
+        return localStorage.getItem(TOKEN_KEY);
+    }
+
+    async function loadUsers() {
+        try {
+            const token = await getToken();
+            const response = await fetch(`${API_URL}/users`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) window.location.href = 'login.html';
+                throw new Error('Feil ved henting av brukere');
+            }
+
+            const users = await response.json();
+            renderUsersTable(users);
+        } catch (err) {
+            document.getElementById('usersList').innerHTML = `<div class="error">Feil: ${err.message}</div>`;
+        }
+    }
+
+    function renderUsersTable(users) {
+        const html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Brukernavn</th>
+                            <th>Fornavn</th>
+                            <th>Etternavn</th>
+                            <th>E-post</th>
+                            <th>Rolle</th>
+                            <th>Handlinger</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td>
+                                    <div class="avatar-cell">
+                                        <img src="${API_URL}/avatars/${user.avatar}" class="avatar-thumb" alt="${user.username}">
+                                    </div>
+                                </td>
+                                <td>${user.username}</td>
+                                <td>${user.first_name || '-'}</td>
+                                <td>${user.last_name || '-'}</td>
+                                <td>${user.email || '-'}</td>
+                                <td>${user.role === 'admin' ? '<strong>Admin</strong>' : 'Bruker'}</td>
+                                <td>
+                                    <div class="actions">
+                                        <button class="btn-secondary" onclick="openEditModal(${user.id})">Rediger</button>
+                                        <button class="btn-danger" onclick="deleteUser(${user.id})">Slett</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        document.getElementById('usersList').innerHTML = html;
+    }
+
+    function openCreateModal() {
+        currentUserId = null;
+        document.getElementById('userForm').reset();
+        document.getElementById('modalTitle').textContent = 'Opprett ny bruker';
+        document.getElementById('username').disabled = false;
+        selectAvatar('avatar1');
+        document.getElementById('userModal').classList.add('active');
+    }
+
+    async function openEditModal(userId) {
+        currentUserId = userId;
+        const token = await getToken();
+        const response = await fetch(`${API_URL}/users/${userId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const user = await response.json();
+
+        document.getElementById('username').value = user.username;
+        document.getElementById('username').disabled = true;
+        document.getElementById('firstName').value = user.first_name || '';
+        document.getElementById('lastName').value = user.last_name || '';
+        document.getElementById('email').value = user.email || '';
+        document.getElementById('role').value = user.role || 'user';
+        selectAvatar(user.avatar || 'avatar1');
+
+        document.getElementById('modalTitle').textContent = 'Rediger bruker';
+        document.getElementById('userModal').classList.add('active');
+    }
+
+    function closeUserModal() {
+        document.getElementById('userModal').classList.remove('active');
+        currentUserId = null;
+    }
+
+    function selectAvatar(avatarName) {
+        document.querySelectorAll('.avatar-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        document.querySelector(`[data-avatar="${avatarName}"]`)?.classList.add('selected');
+        document.getElementById('selectedAvatar').value = avatarName;
+    }
+
+    function renderAvatarOptions() {
+        const avatars = ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', 'avatar7', 'avatar8'];
+        const html = `
+                <input type="hidden" id="selectedAvatar" value="avatar1">
+                ${avatars.map(avatar => `
+                    <div class="avatar-option" data-avatar="${avatar}" onclick="selectAvatar('${avatar}')">
+                        <img src="${API_URL}/avatars/${avatar}" alt="${avatar}">
+                    </div>
+                `).join('')}
+            `;
+        document.getElementById('avatarOptions').innerHTML = html;
+    }
+
+    document.getElementById('userForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById('username').value.trim();
+        const firstName = document.getElementById('firstName').value.trim();
+        const lastName = document.getElementById('lastName').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const role = document.getElementById('role').value;
+        const avatar = document.getElementById('selectedAvatar').value;
+
+        if (!username || !email) {
+            showMessage('Brukernavn og e-post er påkrevd', 'error');
+            return;
+        }
+
+        try {
+            const token = await getToken();
+            const method = currentUserId ? 'PUT' : 'POST';
+            const url = currentUserId ? `${API_URL}/users/${currentUserId}` : `${API_URL}/users`;
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    username,
+                    first_name: firstName,
+                    last_name: lastName,
+                    email,
+                    avatar,
+                    role
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Feil ved lagring');
+            }
+
+            closeUserModal();
+            loadUsers();const msg = currentUserId ? 'Bruker oppdatert' : 'Bruker opprettet';
+            showMessage(msg, 'success');
+        } catch (err) {
+            showMessage(`Feil: ${err.message}`, 'error');
+        }
+    });
+
+    async function deleteUser(userId) {
+        if (!confirm('Er du sikker på at du vil slette denne brukeren?')) return;
+
+        try {
+            const token = await getToken();
+            const response = await fetch(`${API_URL}/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Feil ved sletting');
+
+            loadUsers();
+            showMessage('Bruker slettet', 'success');
+        } catch (err) {
+            showMessage(`Feil: ${err.message}`, 'error');
+        }
+    }
+
+    function showMessage(msg, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.className = type;
+        messageDiv.textContent = msg;
+        setTimeout(() => messageDiv.textContent = '', 4000);
+    }
+
+    async function logout() {
+        const token = await getToken();
+        await fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        localStorage.removeItem(TOKEN_KEY);
+        closeUserMenu();
+        window.location.href = 'login.html';
+    }
+
+    function toggleUserMenu() {
+        const dropdown = document.getElementById('userMenuDropdown');
+        dropdown.classList.toggle('active');
+    }
+
+    function closeUserMenu() {
+        const dropdown = document.getElementById('userMenuDropdown');
+        dropdown.classList.remove('active');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const userMenuContainer = document.getElementById('userMenuContainer');
+        if (userMenuContainer && !userMenuContainer.contains(e.target)) {
+            closeUserMenu();
+        }
+    });
+
+    // Hamburger menu functionality
+    function toggleHamburgerMenu() {
+        const hamburger = document.getElementById('hamburgerMenu');
+        const mobileNav = document.getElementById('mobileNav');
+        hamburger.classList.toggle('active');
+        mobileNav.classList.toggle('active');
+    }
+
+    function closeMobileMenu() {
+        const hamburger = document.getElementById('hamburgerMenu');
+        const mobileNav = document.getElementById('mobileNav');
+        hamburger.classList.remove('active');
+        mobileNav.classList.remove('active');
+    }
+
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('#mobileNav a').forEach(link => {
+        link.addEventListener('click', closeMobileMenu);
+    });
+
+    // Load profile info for nav button
+    async function loadProfileNav() {
+        try {
+            const token = await getToken();
+            if (!token) {
+                document.getElementById('userMenuBtn').style.display = 'none';
+                document.getElementById('userMenuLoginBtn').style.display = 'flex';
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const profile = await response.json();
+                document.getElementById('userMenuAvatar').src = `${API_URL}/avatars/${profile.avatar || 'avatar1'}`;
+                document.getElementById('userMenuUsername').textContent = profile.username;
+                document.getElementById('userMenuBtn').style.display = 'flex';
+                document.getElementById('userMenuLoginBtn').style.display = 'none';
+            }
+        } catch (err) {
+            console.error('Error loading profile nav:', err);
+        }
+    }
+
+    document.getElementById('userMenuBtn')?.addEventListener('click', toggleUserMenu);
+    document.getElementById('userMenuLogout')?.addEventListener('click', logout);
+    document.getElementById('hamburgerMenu')?.addEventListener('click', toggleHamburgerMenu);
+    document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
+        logout();
+        closeMobileMenu();
+    });
+
+    renderAvatarOptions();
+    loadUsers();
+    loadProfileNav();
+</script>
+</div>
+</body>
+</html>
