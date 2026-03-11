@@ -5,6 +5,7 @@ const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 require('dotenv').config();
 
 const app = express();
@@ -12,9 +13,9 @@ const port = process.env.PORT || 3000;
 
 // Setup email transporter - supports Gmail and SendGrid
 function createTransporter() {
-    // Try SendGrid first (better for production on Railway)
+    // Try SendGrid Web API first (no DNS setup required)
     if (process.env.SENDGRID_API_KEY) {
-        console.log('[EMAIL] Configuring SendGrid transporter....');
+        console.log('[EMAIL] Configuring SendGrid Web API transporter...');
         return nodemailer.createTransport({
             host: 'smtp.sendgrid.net',
             port: 587,
@@ -23,14 +24,18 @@ function createTransporter() {
                 user: 'apikey',
                 pass: process.env.SENDGRID_API_KEY
             },
-            connectionTimeout: 10000,
-            socketTimeout: 10000,
-            greetingTimeout: 10000,
-            pool: true,
-            maxConnections: 1,
-            maxMessages: 5,
-            rateDelta: 1000,
-            rateLimit: 5
+            // Relaxed timeout settings for SendGrid
+            connectionTimeout: 30000,
+            socketTimeout: 30000,
+            greetingTimeout: 30000,
+            pool: {
+                maxConnections: 1,
+                maxMessages: Infinity,
+                rateDelta: 100,
+                rateLimit: 1
+            },
+            logger: true,
+            debug: true
         });
     }
 
@@ -44,12 +49,15 @@ function createTransporter() {
             user: process.env.GMAIL_USER,
             pass: process.env.GMAIL_PASS
         },
-        connectionTimeout: 10000,
-        socketTimeout: 10000,
-        greetingTimeout: 10000,
-        pool: true,
-        maxConnections: 1,
-        maxMessages: 5
+        connectionTimeout: 30000,
+        socketTimeout: 30000,
+        greetingTimeout: 30000,
+        pool: {
+            maxConnections: 1,
+            maxMessages: Infinity,
+            rateDelta: 100,
+            rateLimit: 1
+        }
     });
 }
 
@@ -301,9 +309,9 @@ async function sendEmail({ to, subject, text, html }) {
             html
         });
 
-        // Add timeout wrapper (60 seconds for email - SendGrid needs more time)
+        // Add timeout wrapper (120 seconds for email - SendGrid needs more time)
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Email send timeout after 60 seconds')), 60000)
+            setTimeout(() => reject(new Error('Email send timeout after 120 seconds')), 120000)
         );
 
         const info = await Promise.race([sendPromise, timeoutPromise]);
