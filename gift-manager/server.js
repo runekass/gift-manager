@@ -23,9 +23,14 @@ function createTransporter() {
                 user: 'apikey',
                 pass: process.env.SENDGRID_API_KEY
             },
-            connectionTimeout: 5000,
-            socketTimeout: 5000,
-            greetingTimeout: 5000
+            connectionTimeout: 10000,
+            socketTimeout: 10000,
+            greetingTimeout: 10000,
+            pool: true,
+            maxConnections: 1,
+            maxMessages: 5,
+            rateDelta: 1000,
+            rateLimit: 5
         });
     }
 
@@ -39,9 +44,12 @@ function createTransporter() {
             user: process.env.GMAIL_USER,
             pass: process.env.GMAIL_PASS
         },
-        connectionTimeout: 5000,
-        socketTimeout: 5000,
-        greetingTimeout: 5000
+        connectionTimeout: 10000,
+        socketTimeout: 10000,
+        greetingTimeout: 10000,
+        pool: true,
+        maxConnections: 1,
+        maxMessages: 5
     });
 }
 
@@ -293,9 +301,9 @@ async function sendEmail({ to, subject, text, html }) {
             html
         });
 
-        // Add timeout wrapper (30 seconds for email)
+        // Add timeout wrapper (60 seconds for email - SendGrid needs more time)
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Email send timeout after 30 seconds')), 30000)
+            setTimeout(() => reject(new Error('Email send timeout after 60 seconds')), 60000)
         );
 
         const info = await Promise.race([sendPromise, timeoutPromise]);
