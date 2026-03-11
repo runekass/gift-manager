@@ -11,12 +11,10 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Setup email transporter - supports Gmail and SendGrid
-let transporter;
-
 function createTransporter() {
     // Try SendGrid first (better for production on Railway)
     if (process.env.SENDGRID_API_KEY) {
-        console.log('[EMAIL] Configuring SendGrid transporter...');
+        console.log('[EMAIL] Configuring SendGrid transporter....');
         return nodemailer.createTransport({
             host: 'smtp.sendgrid.net',
             port: 587,
@@ -25,8 +23,9 @@ function createTransporter() {
                 user: 'apikey',
                 pass: process.env.SENDGRID_API_KEY
             },
-            connectionTimeout: 10000,
-            socketTimeout: 10000
+            connectionTimeout: 5000,
+            socketTimeout: 5000,
+            greetingTimeout: 5000
         });
     }
 
@@ -40,18 +39,19 @@ function createTransporter() {
             user: process.env.GMAIL_USER,
             pass: process.env.GMAIL_PASS
         },
-        connectionTimeout: 10000,
-        socketTimeout: 10000
+        connectionTimeout: 5000,
+        socketTimeout: 5000,
+        greetingTimeout: 5000
     });
 }
-
-transporter = createTransporter();
 
 console.log('========================================');
 console.log('🚀 Gift Manager Server Starting');
 console.log('========================================');
 console.log(`[CONFIG] GMAIL_USER: ${process.env.GMAIL_USER ? '✓ SET' : '✗ NOT SET'}`);
 console.log(`[CONFIG] GMAIL_PASS: ${process.env.GMAIL_PASS ? '✓ SET' : '✗ NOT SET'}`);
+console.log(`[CONFIG] SENDGRID_API_KEY: ${process.env.SENDGRID_API_KEY ? '✓ SET' : '✗ NOT SET'}`);
+console.log(`[CONFIG] SENDGRID_FROM_EMAIL: ${process.env.SENDGRID_FROM_EMAIL ? '✓ SET' : '✗ NOT SET'}`);
 console.log(`[CONFIG] NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
 console.log(`[CONFIG] PORT: ${process.env.PORT || 3000}`);
 console.log('========================================\n');
@@ -268,10 +268,18 @@ async function sendEmail({ to, subject, text, html }) {
     }
 
     try {
+        // Create a fresh transporter for this email (avoids connection reuse issues)
+        const transporter = createTransporter();
+
         // Determine sender email
-        const fromEmail = process.env.SENDGRID_API_KEY
-            ? 'noreply@giftmanager.com'  // SendGrid needs a verified domain
-            : process.env.GMAIL_USER;
+        let fromEmail;
+        if (process.env.SENDGRID_API_KEY) {
+            // For SendGrid, use configured email or fallback
+            fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@giftmanager.com';
+        } else {
+            // For Gmail, use the configured Gmail address
+            fromEmail = process.env.GMAIL_USER;
+        }
 
         const provider = process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Gmail';
         console.log(`[EMAIL] Attempting to send email via ${provider}...`);
@@ -285,9 +293,9 @@ async function sendEmail({ to, subject, text, html }) {
             html
         });
 
-        // Add timeout wrapper (60 seconds for email)
+        // Add timeout wrapper (30 seconds for email)
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Email send timeout after 60 seconds')), 60000)
+            setTimeout(() => reject(new Error('Email send timeout after 30 seconds')), 30000)
         );
 
         const info = await Promise.race([sendPromise, timeoutPromise]);
