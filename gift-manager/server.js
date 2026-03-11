@@ -261,41 +261,52 @@ async function sendEmail({ to, subject, text, html }) {
         // Use SendGrid Web API if available (HTTP-based, works better with Railway)
         if (process.env.SENDGRID_API_KEY) {
             console.log('[EMAIL] Attempting to send email via SendGrid Web API...');
-            const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@giftmanager.com';
-            console.log(`[EMAIL] Email details: from=${fromEmail}, to=${to}, subject=${subject}`);
+            const fromEmail = (process.env.SENDGRID_FROM_EMAIL || 'noreply@giftmanager.com').trim();
+            console.log(`[EMAIL] Email details: from="${fromEmail}", to="${to}", subject="${subject}"`);
+            console.log(`[EMAIL] From email length: ${fromEmail.length}, contains spaces: ${fromEmail.includes(' ')}`);
 
-            const response = await axios.post(
-                'https://api.sendgrid.com/v3/mail/send',
-                {
-                    personalizations: [
-                        {
-                            to: [{ email: to }]
-                        }
-                    ],
-                    from: { email: fromEmail },
-                    subject,
-                    content: [
-                        {
-                            type: 'text/plain',
-                            value: text
-                        },
-                        {
-                            type: 'text/html',
-                            value: html
-                        }
-                    ]
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
-                        'Content-Type': 'application/json'
+            try {
+                const response = await axios.post(
+                    'https://api.sendgrid.com/v3/mail/send',
+                    {
+                        personalizations: [
+                            {
+                                to: [{ email: to }]
+                            }
+                        ],
+                        from: { email: fromEmail },
+                        subject,
+                        content: [
+                            {
+                                type: 'text/plain',
+                                value: text
+                            },
+                            {
+                                type: 'text/html',
+                                value: html
+                            }
+                        ]
                     },
-                    timeout: 30000
-                }
-            );
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        timeout: 30000
+                    }
+                );
 
-            console.log(`[EMAIL] ✓ Email sent successfully via SendGrid Web API.`);
-            return { messageId: `sendgrid-${Date.now()}` };
+                console.log(`[EMAIL] ✓ Email sent successfully via SendGrid Web API.`);
+                console.log(`[EMAIL] Response status: ${response.status}`);
+                return { messageId: `sendgrid-${Date.now()}` };
+            } catch (sgError) {
+                console.error(`[EMAIL] ✗ SendGrid API error:`);
+                console.error(`[EMAIL] Status: ${sgError.response?.status}`);
+                console.error(`[EMAIL] Status text: ${sgError.response?.statusText}`);
+                console.error(`[EMAIL] Error data:`, JSON.stringify(sgError.response?.data, null, 2));
+                console.error(`[EMAIL] Message: ${sgError.message}`);
+                throw sgError;
+            }
         }
 
         // Fall back to Gmail SMTP
