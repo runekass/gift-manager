@@ -4,10 +4,28 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS
+    }
+});
+
+console.log('========================================');
+console.log('🚀 Gift Manager Server Starting');
+console.log('========================================');
+console.log(`[CONFIG] GMAIL_USER: ${process.env.GMAIL_USER ? '✓ SET' : '✗ NOT SET'}`);
+console.log(`[CONFIG] GMAIL_PASS: ${process.env.GMAIL_PASS ? '✓ SET' : '✗ NOT SET'}`);
+console.log(`[CONFIG] NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
+console.log(`[CONFIG] PORT: ${process.env.PORT || 3000}`);
+console.log('========================================\n');
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -123,17 +141,18 @@ pool.on('error', (err) => {
 // Helper function to query the database
 function query(sql, values) {
     return new Promise((resolve, reject) => {
-        if (!isConnected) {
-            reject(new Error('Database not connected'));
-            return;
-        }
-
         pool.query(sql, values, (err, results) => {
             if (err) {
                 console.error('Query error:', sql);
                 console.error('Error:', err.message);
+                // Mark disconnected only for connection-level failures
+                if (err.fatal || err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT') {
+                    isConnected = false;
+                }
                 reject(err);
             } else {
+                // If query succeeds, the pool is reachable
+                isConnected = true;
                 resolve(results);
             }
         });
@@ -153,7 +172,7 @@ async function authRequired(req, res, next) {
         }
 
         const rows = await query(
-            `SELECT us.token, us.expires_at, u.id, u.username, u.role
+            `SELECT us.token, us.expires_at, us.user_id, u.id, u.username, u.avatar, u.role
              FROM user_sessions us
              JOIN users u ON u.id = us.user_id
              WHERE us.token = ?`,
@@ -172,12 +191,124 @@ async function authRequired(req, res, next) {
             return res.status(401).json({ error: 'Sesjon utløpt' });
         }
 
-        req.user = { id: session.id, username: session.username, token, role: session.role };
+        req.user = {
+            id: session.user_id,
+            username: session.username,
+            avatar: session.avatar || 'avatar1',
+            role: session.role,
+            token
+        };
         next();
     } catch (err) {
         res.status(500).json({ error: 'Autentisering feilet' });
     }
 }
+
+function isMailerConfigured() {
+    return Boolean(process.env.GMAIL_USER && process.env.GMAIL_PASS);
+}
+
+function parseNotifyPrefs(value) {
+    if (!value) return { assignment: true, deadline: true };
+    if (typeof value === 'object') return value;
+    try {
+        return JSON.parse(value);
+    } catch (_) {
+        return { assignment: true, deadline: true };
+    }
+}
+
+async function sendEmail({ to, subject, text, html }) {
+    console.log(`[EMAIL] sendEmail called: to=${to}, subject="${subject}"`);
+
+    if (!isMailerConfigured()) {
+        console.warn('[EMAIL] GMAIL_USER or GMAIL_PASS not configured - Email skipped');
+        console.warn(`[EMAIL] GMAIL_USER=${process.env.GMAIL_USER ? 'SET' : 'NOT SET'}`);
+        console.warn(`[EMAIL] GMAIL_PASS=${process.env.GMAIL_PASS ? 'SET' : 'NOT SET'}`);
+        return { skipped: true };
+    }
+
+    if (!to) {
+        console.log('[EMAIL] No recipient email - Email skipped');
+        return { skipped: true };
+    }
+
+    try {
+        console.log(`[EMAIL] Attempting to send email via Gmail...`);
+        const info = await transporter.sendMail({
+            from: process.env.GMAIL_USER,
+            to,
+            subject,
+            text,
+            html
+        });
+        console.log(`[EMAIL] ✓ Email sent successfully. Message ID: ${info.messageId}`);
+        return { messageId: info.messageId };
+    } catch (err) {
+        console.error(`[EMAIL] ✗ Failed to send email: ${err.message}`);
+        throw err;
+    }
+}
+
+async function sendAssignmentNotification(todoId) {
+    console.log(`[EMAIL] sendAssignmentNotification called for todoId=${todoId}`);
+
+    // Join todos -> users by responsible username
+    const rows = await query(
+        `SELECT t.id, t.task, t.status, t.due_date, t.responsible,
+                u.email, u.notify_preferences
+         FROM todos t
+         LEFT JOIN users u ON u.username = t.responsible
+         WHERE t.id = ?`,
+        [todoId]
+    );
+
+    console.log(`[EMAIL] Query returned ${rows.length} rows`);
+    if (!rows.length) {
+        console.log(`[EMAIL] No rows found for todoId=${todoId}`);
+        return;
+    }
+
+    const todo = rows[0];
+    console.log(`[EMAIL] Todo found: task="${todo.task}", responsible="${todo.responsible}", email="${todo.email}"`);
+
+    const prefs = parseNotifyPrefs(todo.notify_preferences);
+    console.log(`[EMAIL] Notify prefs: ${JSON.stringify(prefs)}`);
+
+    if (!prefs.assignment) {
+        console.log(`[EMAIL] Assignment notifications disabled for this user`);
+        return;
+    }
+
+    if (!todo.email) {
+        console.warn(`[EMAIL] Assignment email skipped: no email for responsible='${todo.responsible}'`);
+        return;
+    }
+
+    console.log(`[EMAIL] Mailer configured: ${isMailerConfigured()}`);
+    const due = todo.due_date ? new Date(todo.due_date).toLocaleString('nb-NO') : 'Ikke satt';
+
+    try {
+        const result = await sendEmail({
+            to: todo.email,
+            subject: `Ny aktivitet tildelt: ${todo.task}`,
+            text: `Hei ${todo.responsible},\n\nDu har fått en aktivitet:\n- Oppgave: ${todo.task}\n- Status: ${todo.status}\n- Frist: ${due}\n\nMvh\nGift Manager`,
+            html: `<p>Hei <strong>${todo.responsible}</strong>,</p>
+                   <p>Du har fått en aktivitet:</p>
+                   <ul>
+                     <li><strong>Oppgave:</strong> ${todo.task}</li>
+                     <li><strong>Status:</strong> ${todo.status}</li>
+                     <li><strong>Frist:</strong> ${due}</li>
+                   </ul>
+                   <p>Mvh<br/>Gift Manager</p>`
+        });
+        console.log(`[EMAIL] sendEmail result: ${JSON.stringify(result)}`);
+    } catch (err) {
+        console.error(`[EMAIL] Error sending email: ${err.message}`);
+        throw err;
+    }
+}
+
 
 function adminRequired(req, res, next) {
     if (req.user.role !== 'admin') {
@@ -192,6 +323,21 @@ app.get('/health', (req, res) => {
         status: 'ok',
         database: isConnected ? 'connected' : 'disconnected',
         environment: process.env.NODE_ENV || 'development'
+    });
+});
+
+// Email configuration test endpoint
+app.get('/api/email-config', (req, res) => {
+    console.log('[EMAIL-CONFIG] Test endpoint called');
+    const gmailUser = process.env.GMAIL_USER;
+    const gmailPass = process.env.GMAIL_PASS;
+
+    res.json({
+        configured: Boolean(gmailUser && gmailPass),
+        gmail_user: gmailUser ? `${gmailUser.substring(0, 3)}***` : 'NOT SET',
+        gmail_pass: gmailPass ? `***${gmailPass.substring(gmailPass.length - 3)}` : 'NOT SET',
+        node_env: process.env.NODE_ENV,
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -326,6 +472,365 @@ app.delete('/gifts/:id', authRequired, adminRequired, async (req, res) => {
     } catch (err) {
         console.error('Error deleting gift:', err);
         res.status(500).send('Feil ved sletting av gave');
+    }
+});
+
+/* -------- Todos API -------- */
+
+// List todos (logged-in users)
+app.get('/todos', authRequired, async (req, res) => {
+    try {
+        const rows = await query(
+            'SELECT id, created_date, task, status, due_date, responsible FROM todos ORDER BY created_date DESC',
+            []
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching todos:', err.message);
+        res.status(500).json({ error: 'Feil ved henting av oppgaver' });
+    }
+});
+
+// Create todo (logged-in users)
+app.post('/todos', authRequired, async (req, res) => {
+    try {
+        const { task, status, due_date, responsible } = req.body;
+        console.log(`[TODO] POST /todos called: task="${task}", status="${status}", responsible="${responsible}"`);
+
+        if (!task || !status || !responsible) {
+            console.log('[TODO] Missing required fields');
+            return res.status(400).json({ error: 'task, status og responsible er påkrevd' });
+        }
+
+        const allowed = ['Ny', 'Pågår', 'Utført'];
+        if (!allowed.includes(status)) {
+            console.log(`[TODO] Invalid status: ${status}`);
+            return res.status(400).json({ error: 'Ugyldig status' });
+        }
+
+        const result = await query(
+            'INSERT INTO todos (task, status, due_date, responsible) VALUES (?, ?, ?, ?)',
+            [task, status, due_date || null, responsible]
+        );
+        console.log(`[TODO] Todo inserted with ID: ${result.insertId}`);
+
+       // Send assignment notification email
+        try {
+            if (result.insertId) {
+                console.log(`[TODO] Triggering email notification for todoId=${result.insertId}`);
+                await sendAssignmentNotification(result.insertId);
+            }
+        } catch (mailErr) {
+            console.warn(`[TODO] Assignment email failed: ${mailErr.message}`);
+        }
+
+        console.log('[TODO] Response sent successfully');
+        res.json({ ok: true, message: 'Oppgave opprettet' });
+    } catch (err) {
+        console.error(`[TODO] Error creating todo: ${err.message}`);
+        res.status(500).json({ error: 'Feil ved oppretting av oppgave' });
+    }
+});
+
+// Update todo (logged-in users)
+app.put('/todos/:id', authRequired, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { task, status, due_date, responsible } = req.body;
+
+        if (!task || !status || !responsible) {
+            return res.status(400).json({ error: 'task, status og responsible er påkrevd' });
+        }
+
+        const allowed = ['Ny', 'Pågår', 'Utført'];
+        if (!allowed.includes(status)) {
+            return res.status(400).json({ error: 'Ugyldig status' });
+        }
+
+        await query(
+            'UPDATE todos SET task = ?, status = ?, due_date = ?, responsible = ? WHERE id = ?',
+            [task, status, due_date || null, responsible, id]
+        );
+
+        // Send assignment notification email
+        try {
+            await sendAssignmentNotification(id);
+        } catch (mailErr) {
+            console.warn('Assignment email failed:', mailErr.message);
+        }
+
+        res.json({ ok: true, message: 'Oppgave oppdatert' });
+    } catch (err) {
+        console.error('Error updating todo:', err.message);
+        res.status(500).json({ error: 'Feil ved oppdatering av oppgave' });
+    }
+});
+
+// Delete todo (admin only)
+app.delete('/todos/:id', authRequired, adminRequired, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await query('DELETE FROM todos WHERE id = ?', [id]);
+        res.json({ ok: true, message: 'Oppgave slettet' });
+    } catch (err) {
+        console.error('Error deleting todo:', err.message);
+        res.status(500).json({ error: 'Feil ved sletting av oppgave' });
+    }
+});
+
+// Get all users (admin only)
+app.get('/users', authRequired, adminRequired, async (req, res) => {
+    try {
+        const rows = await query(
+            'SELECT id, username, first_name, last_name, email, avatar, role FROM users ORDER BY username',
+            []
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching users:', err.message);
+        res.status(500).json({ error: 'Feil ved henting av brukere' });
+    }
+});
+
+// Public user list for dropdowns (authenticated users)
+app.get('/users/public-list', authRequired, async (req, res) => {
+    try {
+        const rows = await query(
+            `SELECT username, first_name, last_name,
+                    TRIM(CONCAT(COALESCE(first_name, ''), 
+                                 ' ',
+                                 COALESCE(last_name, ''))) AS display_name
+             FROM users ORDER BY first_name, last_name, username`,
+            []
+        );
+        res.json(rows);
+    } catch (err) {
+        console.error('Error fetching public user list:', err.message);
+        res.status(500).json({ error: 'Feil ved henting av brukerliste' });
+    }
+});
+
+// Get single user (admin only)
+app.get('/users/:id', authRequired, adminRequired, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const rows = await query(
+            'SELECT id, username, first_name, last_name, email, avatar, role FROM users WHERE id = ?',
+            [id]
+        );
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Bruker ikke funnet' });
+        }
+        res.json(rows[0]);
+    } catch (err) {
+        console.error('Error fetching user:', err.message);
+        res.status(500).json({ error: 'Feil ved henting av bruker' });
+    }
+});
+
+// Create user (admin only)
+app.post('/users', authRequired, adminRequired, async (req, res) => {
+    try {
+        const { username, email, first_name, last_name, avatar, role } = req.body;
+
+        if (!username || !email) {
+            return res.status(400).json({ error: 'Brukernavn og e-post er påkrevd' });
+        }
+
+        // Check for duplicate username
+        const existingUsername = await query(
+            'SELECT id FROM users WHERE username = ?',
+            [username]
+        );
+        if (existingUsername.length) {
+            return res.status(400).json({ error: 'Brukernavn eksisterer allerede' });
+        }
+
+        // Check for duplicate email
+        const existingEmail = await query(
+            'SELECT id FROM users WHERE email = ?',
+            [email]
+        );
+        if (existingEmail.length) {
+            return res.status(400).json({ error: 'E-post eksisterer allerede' });
+        }
+
+        const defaultPassword = crypto.randomBytes(8).toString('hex');
+        const passwordHash = await bcrypt.hash(defaultPassword, 10);
+
+        await query(
+            'INSERT INTO users (username, email, password_hash, first_name, last_name, avatar, role, notify_preferences) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [username, email, passwordHash, first_name || '', last_name || '', avatar || 'avatar1', role || 'user', JSON.stringify({ assignment: true, deadline: true })]
+        );
+
+        res.json({ ok: true, message: 'Bruker opprettet', tempPassword: defaultPassword });
+    } catch (err) {
+        console.error('Error creating user:', err.message);
+        res.status(500).json({ error: 'Feil ved oppretting av bruker' });
+    }
+});
+
+
+// Get current user profile
+app.get('/profile', authRequired, async (req, res) => {
+    try {
+        const rows = await query(
+            'SELECT id, username, first_name, last_name, email, avatar, notify_preferences FROM users WHERE id = ?',
+            [req.user.id]
+        );
+
+        if (!rows.length) {
+            return res.status(404).json({ error: 'Bruker profil ikke funnet' });
+        }
+
+        const profile = rows[0];
+        // Handle JSON parsing for notify_preferences
+        if (typeof profile.notify_preferences === 'string') {
+            profile.notify_preferences = JSON.parse(profile.notify_preferences || '{}');
+        }
+        profile.notify_preferences = profile.notify_preferences || { assignment: true, deadline: true };
+        res.json(profile);
+    } catch (err) {
+        console.error('Error fetching profile:', err.message);
+        res.status(500).json({ error: 'Feil ved henting av profil' });
+    }
+});
+
+
+// Update current user profile
+app.put('/profile', authRequired, async (req, res) => {
+    try {
+        const { first_name, last_name, email, avatar, notify_preferences } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'E-post er påkrevd' });
+        }
+
+        await query(
+            'UPDATE users SET first_name = ?, last_name = ?, email = ?, avatar = ?, notify_preferences = ? WHERE id = ?',
+            [first_name || '', last_name || '', email, avatar || 'avatar1', JSON.stringify(notify_preferences || { assignment: true, deadline: true }), req.user.id]
+        );
+
+        res.json({ ok: true, message: 'Profil oppdatert' });
+    } catch (err) {
+        console.error('Error updating profile:', err.message);
+        res.status(500).json({ error: 'Feil ved oppdatering av profil' });
+    }
+});
+
+// Update user (admin only)
+app.put('/users/:id', authRequired, adminRequired, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { first_name, last_name, email, avatar, role } = req.body;
+
+        await query(
+            'UPDATE users SET first_name = ?, last_name = ?, email = ?, avatar = ?, role = ? WHERE id = ?',
+            [first_name || '', last_name || '', email, avatar || 'avatar1', role || 'user', id]
+        );
+
+        res.json({ ok: true, message: 'Bruker oppdatert' });
+    } catch (err) {
+        console.error('Error updating user:', err.message);
+        res.status(500).json({ error: 'Feil ved oppdatering av bruker' });
+    }
+});
+
+// Delete user (admin only)
+app.delete('/users/:id', authRequired, adminRequired, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await query('DELETE FROM users WHERE id = ?', [id]);
+        res.json({ ok: true, message: 'Bruker slettet' });
+    } catch (err) {
+        console.error('Error deleting user:', err.message);
+        res.status(500).json({ error: 'Feil ved sletting av bruker' });
+    }
+});
+
+// Get avatar (inline SVG)
+app.get('/avatars/:name', (req, res) => {
+    const avatars = {
+        avatar1: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#FF6B6B"/><circle cx="50" cy="35" r="15" fill="white"/><ellipse cx="50" cy="70" rx="20" ry="25" fill="white"/></svg>',
+        avatar2: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#4ECDC4"/><circle cx="50" cy="35" r="15" fill="white"/><ellipse cx="50" cy="70" rx="20" ry="25" fill="white"/></svg>',
+        avatar3: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#FFE66D"/><circle cx="50" cy="35" r="15" fill="white"/><ellipse cx="50" cy="70" rx="20" ry="25" fill="white"/></svg>',
+        avatar4: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#95E1D3"/><circle cx="50" cy="35" r="15" fill="white"/><ellipse cx="50" cy="70" rx="20" ry="25" fill="white"/></svg>',
+        avatar5: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#A8D8EA"/><circle cx="50" cy="35" r="15" fill="white"/><ellipse cx="50" cy="70" rx="20" ry="25" fill="white"/></svg>',
+        avatar6: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#C7CEEA"/><circle cx="50" cy="35" r="15" fill="white"/><ellipse cx="50" cy="70" rx="20" ry="25" fill="white"/></svg>',
+        avatar7: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#F38181"/><circle cx="50" cy="35" r="15" fill="white"/><ellipse cx="50" cy="70" rx="20" ry="25" fill="white"/></svg>',
+        avatar8: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="#AA96DA"/><circle cx="50" cy="35" r="15" fill="white"/><ellipse cx="50" cy="70" rx="20" ry="25" fill="white"/></svg>'
+    };
+
+    const svg = avatars[req.params.name];
+    if (!svg) {
+        return res.status(404).json({ error: 'Avatar not found' });
+    }
+
+    res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.send(svg);
+});
+
+
+// Send due-date reminder emails (admin only)
+app.post('/notifications/due-reminders', authRequired, adminRequired, async (req, res) => {
+    try {
+        const daysAhead = Number(req.body?.daysAhead ?? 2);
+        const now = new Date();
+        const until = new Date(now.getTime() + daysAhead * 24 * 60 * 60 * 1000);
+
+        const rows = await query(
+            `SELECT t.id, t.task, t.status, t.due_date, t.responsible,
+                    u.email, u.notify_preferences
+             FROM todos t
+             LEFT JOIN users u ON u.username = t.responsible
+             WHERE t.due_date IS NOT NULL
+               AND t.status <> 'Utført'
+               AND t.due_date >= ?
+               AND t.due_date <= ?`,
+            [now, until]
+        );
+
+        let sent = 0;
+        let skipped = 0;
+
+        for (const todo of rows) {
+            const prefs = parseNotifyPrefs(todo.notify_preferences);
+            if (!prefs.deadline || !todo.email) {
+                skipped++;
+                continue;
+            }
+
+            const due = new Date(todo.due_date).toLocaleString('nb-NO');
+
+            try {
+                await sendEmail({
+                    to: todo.email,
+                    subject: `⏰ Påminnelse: Frist nærmer seg - ${todo.task}`,
+                    text: `Hei ${todo.responsible},\n\nFristen nærmer seg for:\n- Oppgave: ${todo.task}\n- Status: ${todo.status}\n- Frist: ${due}\n\nMvh\nArrangementsportalen`,
+                    html: `<p>Hei <strong>${todo.responsible}</strong>,</p>
+                           <p>Fristen nærmer seg for en oppgave:</p>
+                           <ul>
+                             <li><strong>Oppgave:</strong> ${todo.task}</li>
+                             <li><strong>Status:</strong> ${todo.status}</li>
+                             <li><strong>Frist:</strong> ${due}</li>
+                           </ul>
+                           <p>Mvh<br/>Arrangementsportalen</p>`
+                });
+                console.log(`Reminder sent to ${todo.email} for todo: ${todo.task}`);
+                sent++;
+            } catch (mailErr) {
+                console.warn(`Reminder mail failed for todo ${todo.id}:`, mailErr.message);
+                skipped++;
+            }
+        }
+
+        res.json({ ok: true, scanned: rows.length, sent, skipped, daysAhead });
+    } catch (err) {
+        console.error('Reminder job failed:', err.message);
+        res.status(500).json({ error: 'Feil ved utsending av påminnelser' });
     }
 });
 
