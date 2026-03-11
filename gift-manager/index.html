@@ -4,75 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="no-referrer" />
-  <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
   <title>Hjem - 17. mai Arrangementsportal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/style.css" />
   <style>
-    :root {
-      --norway-red: #853c49;
-      --norway-blue: #1d3b7c;
-      --norway-white: #ffffff;
-      --norway-light: #f6f8ff;
-      --norway-soft-shadow: rgba(31, 59, 122, 0.22);
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(90deg, #853c49 0%, #1d3b7c 100%);
-      min-height: 100vh;
-      padding: 20px;
-    }
-    .container {
-      max-width: 900px;
-      margin: 0 auto;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-      overflow: hidden;
-    }
-    .header {
-      background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
-      color: var(--norway-white);
-      padding: 24px 30px;
-    }
-    .header h1 { font-size: 2rem; margin-bottom: 8px; }
-    .header p { opacity: 0.9; }
-    .nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 16px;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .nav-left {
-      display: flex;
-      gap: 12px;
-    }
-    .nav a, .nav button {
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      background: #fff;
-      color: var(--norway-blue);
-      padding: 8px 14px;
-      border-radius: 8px;
-      font-weight: 600;
-    }
-    .nav button:hover, .nav a:hover {
-      background: #f0f2ff;
-    }
-    .content { padding: 30px; }
-    .card {
-      background: var(--norway-light);
-      border: 1px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .card h2 { margin-bottom: 10px; color: #333; }
-    .muted { color: #555; line-height: 1.5; }
     .login-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -80,17 +15,6 @@
       margin-top: 12px;
     }
     .login-grid.full { grid-template-columns: 1fr; }
-    input[type="text"], input[type="password"] {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #e0e0e0;
-      border-radius: 6px;
-    }
-    input:focus {
-      outline: none;
-      border-color: var(--norway-blue);
-      box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.12);
-    }
     .checkbox-label {
       display: flex;
       align-items: center;
@@ -102,48 +26,12 @@
       width: auto;
       margin: 0;
     }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
-      color: var(--norway-white);
-      border: none;
-      padding: 12px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: 600;
-      width: 100%;
+    .header {
+      text-align: center;
     }
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 18px var(--norway-soft-shadow);
-    }
-    .btn-edit {
-      background: var(--norway-blue);
-      color: var(--norway-white);
-      border: none;
-      padding: 10px 14px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-    .btn-edit:hover {
-      background: #1a2e6d;
-    }
-    .btn-delete {
-      background: var(--norway-red);
-      color: var(--norway-white);
-      border: none;
-      padding: 10px 14px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: 500;
-    }
-    .btn-delete:hover {
-      background: #9f0a26;
-    }
-    .status {
-      margin-top: 10px;
-      font-size: 0.95rem;
-      color: #333;
+    .header h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
     }
     .role-badge {
       display: inline-block;
@@ -162,15 +50,32 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>17. mai Arrangementsportal</h1>
+      <h1>🏠 17. mai Arrangementsportal</h1>
       <p>Velkommen! Her finner du informasjon om 17. mai-arrangementet 2026</p>
-      <div class="nav">
-        <div class="nav-left">
+      <nav>
+        <button class="hamburger-menu" id="hamburgerMenu">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
+        <div class="nav-menu mobile" id="mobileNav">
           <a href="/">Hjem</a>
           <a href="/premieoversikt.html">Premieoversikt</a>
+          <a href="/todos.html">Todos</a>
+          <a href="/users.html">Brukeradmin</a>
         </div>
-        <button id="logoutBtn" style="display:none;">Logg ut</button>
-      </div>
+        <div class="nav-left user-menu" id="userMenuContainer">
+          <button class="user-menu-btn" id="userMenuBtn" style="display:none;">
+            <img src="" alt="Profile" class="user-menu-avatar" id="userMenuAvatar">
+            <span id="userMenuUsername">...</span>
+            <span>▼</span>
+          </button>
+          <div class="user-menu-dropdown" id="userMenuDropdown">
+            <a href="/profile.html">Min profil</a>
+            <button id="userMenuLogout">Logg ut</button>
+          </div>
+        </div>
+      </nav>
     </div>
 
     <div class="content">
@@ -186,8 +91,14 @@
         <h2>Innlogging</h2>
         <p class="muted">Logg inn for å aktivere admin-funksjoner. Du kan velge å bli husket.</p>
         <div class="login-grid">
-          <input id="username" type="text" placeholder="Brukernavn" />
-          <input id="password" type="password" placeholder="Passord" />
+          <div>
+            <label for="username">Brukernavn</label>
+            <input id="username" type="text" placeholder="Brukernavn" />
+          </div>
+          <div>
+            <label for="password">Passord</label>
+            <input id="password" type="password" placeholder="Passord" />
+          </div>
         </div>
         <div class="login-grid full">
           <label class="checkbox-label">
@@ -204,7 +115,7 @@
       <div class="card" id="userCard" style="display:none;">
         <h2>Innlogget</h2>
         <p class="muted">
-          Du er innlogget som <strong id="whoami"></strong><span id="roleSpan" class="role-badge"></span>.
+          Du er innlogget som <strong id="whoami"></strong> <span id="roleSpan" class="role-badge"></span>
         </p>
       </div>
     </div>
@@ -212,6 +123,7 @@
 
   <script>
     const TOKEN_KEY = 'gm_auth_token';
+    const API_URL = window.location.origin;
 
     function setStatus(msg, isError = false) {
       const el = document.getElementById('loginStatus');
@@ -220,22 +132,106 @@
     }
 
     function setLoggedInUI(user) {
-      document.getElementById('loginCard').style.display = 'none';
-      document.getElementById('userCard').style.display = 'block';
-      document.getElementById('logoutBtn').style.display = 'inline-block';
-      document.getElementById('whoami').textContent = user.username;
-      document.getElementById('roleSpan').textContent = user.role === 'admin' ? 'Admin' : 'Bruker';
-      document.getElementById('roleSpan').style.background = user.role === 'admin' ? '#9f0a26' : '#1d3b7c';
+      console.log('setLoggedInUI called with:', user);
+
+      if (!user) {
+        console.error('setLoggedInUI called with no user data');
+        return;
+      }
+
+      console.log('Hiding loginCard, showing userCard');
+      const loginCard = document.getElementById('loginCard');
+      const userCard = document.getElementById('userCard');
+      const userMenuBtn = document.getElementById('userMenuBtn');
+      const mobileProfileLink = document.getElementById('mobileProfileLink');
+      const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+
+      if (loginCard) loginCard.style.display = 'none';
+      if (userCard) userCard.style.display = 'block';
+      if (userMenuBtn) userMenuBtn.style.display = 'flex';
+      if (mobileProfileLink) mobileProfileLink.style.display = 'block';
+      if (mobileLogoutBtn) mobileLogoutBtn.style.display = 'block';
+
+      const username = user.username || 'Unknown';
+      const role = user.role || 'user';
+
+      console.log('Setting username:', username, 'role:', role);
+
+      const userMenuUsername = document.getElementById('userMenuUsername');
+      const whoami = document.getElementById('whoami');
+      const roleSpan = document.getElementById('roleSpan');
+
+      if (userMenuUsername) userMenuUsername.textContent = username;
+      if (whoami) whoami.textContent = username;
+      if (roleSpan) {
+        roleSpan.textContent = role === 'admin' ? 'Admin' : 'Bruker';
+        roleSpan.style.backgroundColor = role === 'admin' ? '#9f0a26' : '#1d3b7c';
+      }
+
+      console.log('whoami element text:', whoami?.textContent);
+      console.log('roleSpan element text:', roleSpan?.textContent);
+
+      loadProfileNav();
     }
 
     function setLoggedOutUI() {
-      document.getElementById('loginCard').style.display = 'block';
-      document.getElementById('userCard').style.display = 'none';
-      document.getElementById('logoutBtn').style.display = 'none';
-      document.getElementById('whoami').textContent = '';
-      document.getElementById('username').value = '';
-      document.getElementById('password').value = '';
+      const loginCard = document.getElementById('loginCard');
+      const userCard = document.getElementById('userCard');
+      const userMenuBtn = document.getElementById('userMenuBtn');
+      const mobileProfileLink = document.getElementById('mobileProfileLink');
+      const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+      const whoami = document.getElementById('whoami');
+      const username = document.getElementById('username');
+      const password = document.getElementById('password');
+
+      if (loginCard) loginCard.style.display = 'block';
+      if (userCard) userCard.style.display = 'none';
+      if (userMenuBtn) userMenuBtn.style.display = 'none';
+      if (mobileProfileLink) mobileProfileLink.style.display = 'none';
+      if (mobileLogoutBtn) mobileLogoutBtn.style.display = 'none';
+      if (whoami) whoami.textContent = '';
+      if (username) username.value = '';
+      if (password) password.value = '';
     }
+
+    // Hamburger menu functionality
+    function toggleHamburgerMenu() {
+      const hamburger = document.getElementById('hamburgerMenu');
+      const mobileNav = document.getElementById('mobileNav');
+      hamburger.classList.toggle('active');
+      mobileNav.classList.toggle('active');
+    }
+
+    function closeMobileMenu() {
+      const hamburger = document.getElementById('hamburgerMenu');
+      const mobileNav = document.getElementById('mobileNav');
+      hamburger.classList.remove('active');
+      mobileNav.classList.remove('active');
+    }
+
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('#mobileNav a').forEach(link => {
+      link.addEventListener('click', closeMobileMenu);
+    });
+
+    // Dropdown menu functionality
+    function toggleUserMenu() {
+      const dropdown = document.getElementById('userMenuDropdown');
+      dropdown.classList.toggle('active');
+    }
+
+    function closeUserMenu() {
+      const dropdown = document.getElementById('userMenuDropdown');
+      dropdown.classList.remove('active');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const userMenuContainer = document.getElementById('userMenuContainer');
+      if (userMenuContainer && !userMenuContainer.contains(e.target)) {
+        closeUserMenu();
+      }
+    });
 
     async function login() {
       const username = document.getElementById('username').value.trim();
@@ -255,16 +251,20 @@
         });
 
         const data = await res.json();
+        console.log('Login response:', data);
+
         if (!res.ok) {
           setStatus(data.error || 'Innlogging feilet.', true);
           return;
         }
 
         localStorage.setItem(TOKEN_KEY, data.token);
+        console.log('User data:', data.user);
         setLoggedInUI(data.user);
         setStatus('Innlogging vellykket!');
         document.getElementById('password').value = '';
       } catch (e) {
+        console.error('Login error:', e);
         setStatus('Kunne ikke kontakte serveren.', true);
       }
     }
@@ -294,6 +294,33 @@
       }
     }
 
+    // Load profile info for nav button
+    async function loadProfileNav() {
+      try {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/profile`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+          const profile = await response.json();
+          const avatarUrl = `${API_URL}/avatars/${profile.avatar || 'avatar1'}?v=${Date.now()}`;
+          const avatarEl = document.getElementById('userMenuAvatar');
+          if (avatarEl) {
+            avatarEl.src = avatarUrl;
+          }
+          const usernameEl = document.getElementById('userMenuUsername');
+          if (usernameEl) {
+            usernameEl.textContent = profile.username;
+          }
+        }
+      } catch (err) {
+        console.error('Error loading profile nav:', err);
+      }
+    }
+
     async function logout() {
       const token = localStorage.getItem(TOKEN_KEY);
       if (token) {
@@ -305,16 +332,24 @@
         } catch (_) {}
       }
       localStorage.removeItem(TOKEN_KEY);
+      closeUserMenu();
       setLoggedOutUI();
       setStatus('Du er logget ut.');
     }
 
-    document.getElementById('loginBtn').addEventListener('click', login);
-    document.getElementById('logoutBtn').addEventListener('click', logout);
-    document.getElementById('password').addEventListener('keypress', (e) => {
+    document.getElementById('loginBtn')?.addEventListener('click', login);
+    document.getElementById('userMenuBtn')?.addEventListener('click', toggleUserMenu);
+    document.getElementById('userMenuLogout')?.addEventListener('click', logout);
+    document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
+      logout();
+      closeMobileMenu();
+    });
+    document.getElementById('hamburgerMenu')?.addEventListener('click', toggleHamburgerMenu);
+    document.getElementById('password')?.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') login();
     });
     window.addEventListener('load', loadSession);
   </script>
 </body>
 </html>
+

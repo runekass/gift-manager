@@ -5,6 +5,8 @@ npm-debug.log*
 .env
 .env.local
 .env.*.local
+# Windows artifacts
+nul
 # IDE
 .idea/
 .vscode/

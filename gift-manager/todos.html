@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="nb">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Todos</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+        .header {
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>✅ Todos</h1>
+        <p>Opprett, rediger og administrer aktiviteter</p>
+        <nav>
+            <button class="hamburger-menu" id="hamburgerMenu">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <div class="nav-menu mobile" id="mobileNav">
+              <a href="/">Hjem</a>
+              <a href="/premieoversikt.html">Premieoversikt</a>
+              <a href="/todos.html">Todos</a>
+              <a href="/users.html">Brukeradmin</a>
+            </div>
+            <div class="nav-left user-menu" id="userMenuContainer">
+              <button class="user-menu-btn" id="userMenuBtn" style="display:none;">
+                <img src="" alt="Profile" class="user-menu-avatar" id="userMenuAvatar">
+                <span id="userMenuUsername">...</span>
+                <span>▼</span>
+              </button>
+              <div class="user-menu-dropdown" id="userMenuDropdown">
+                <a href="/profile.html">Min profil</a>
+                <button id="userMenuLogout">Logg ut</button>
+              </div>
+              <a href="/login.html" class="user-menu-btn" id="userMenuLoginBtn" style="display:none;">
+                Logg inn
+              </a>
+            </div>
+        </nav>
+    </div>
+
+    <div class="content">
+        <div id="notLoggedIn" class="card hidden">
+            <h2>Du må logge inn</h2>
+            <p>Kun innloggede brukere kan se og endre todos.</p>
+            <p style="margin-top:10px;"><a href="/">Gå til innlogging</a></p>
+        </div>
+
+        <div id="loggedInContent" class="hidden">
+            <div class="card">
+                <h2>Ny aktivitet</h2>
+                <div class="form-grid">
+                    <div>
+                        <label for="task">Oppgave</label>
+                        <input id="task" type="text" placeholder="Oppgave" />
+                    </div>
+                    <div>
+                        <label for="status">Status</label>
+                        <select id="status">
+                            <option>Ny</option>
+                            <option>Pågår</option>
+                            <option>Utført</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-grid-3">
+                    <div>
+                        <label for="due_date">Frist</label>
+                        <input id="due_date" type="datetime-local" placeholder="Frist" />
+                    </div>
+                    <div>
+                        <label for="responsible">Ansvarlig</label>
+                        <select id="responsible">
+                            <option value="">Velg ansvarlig...</option>
+                        </select>
+                    </div>
+
+                    <button id="todoActionBtn" class="btn-primary" onclick="saveTodo()">Opprett aktivitet</button>
+                </div>
+                <div id="todoValidationMsg" class="message error" style="display:none; margin-top:8px;"></div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h2 style="margin-bottom:0;">Aktiviteter</h2>
+                    <button id="sendRemindersBtn" class="btn-edit" style="display:none;" onclick="sendReminders()">
+                        ⏰ Send påminnelser
+                    </button>
+                </div>
+                <div class="todo-header">
+                    <div>Oppgave</div>
+                    <div>Status</div>
+                    <div>Frist</div>
+                    <div>Ansvarlig</div>
+                    <div>Handling</div>
+                </div>
+                <ul id="todoList" class="todo-list"></ul>
+                <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const TOKEN_KEY = 'gm_auth_token';
+    const API_URL = window.location.origin;
+    let currentUser = null;
+    let editingId = null;
+    let allTodos = [];
+    let availableUsers = [];
+
+    function getAuthHeader() {
+        const token = localStorage.getItem(TOKEN_KEY);
+        return token ? { Authorization: `Bearer ${token}` } : {};
+    }
+
+    function toInputDateTime(value) {
+        if (!value) return '';
+        const d = new Date(value);
+        const pad = (n) => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function showTodoValidation(message) {
+        const el = document.getElementById('todoValidationMsg');
+        if (!el) return;
+        el.textContent = message;
+        el.style.display = 'block';
+    }
+
+    function clearTodoValidation() {
+        const el = document.getElementById('todoValidationMsg');
+        if (!el) return;
+        el.textContent = '';
+        el.style.display = 'none';
+    }
+
+    function showStatusMessage(type, message) {
+        const el = document.getElementById('statusMessage');
+        if (!el) return;
+        el.className = `status-message ${type}`;
+        el.textContent = message;
+        el.style.display = 'block';
+    }
+
+    function clearStatusMessage() {
+        const el = document.getElementById('statusMessage');
+        if (!el) return;
+        el.className = 'status-message';
+        el.textContent = '';
+        el.style.display = 'none';
+    }
+
+    async function logout() {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (token) {
+            try {
+                await fetch('/auth/logout', { method: 'POST', headers: getAuthHeader() });
+            } catch (_) {}
+        }
+        localStorage.removeItem(TOKEN_KEY);
+        window.location.href = '/';
+    }
+
+    function setButtonBusy(buttonId, busy, busyText) {
+        const btn = document.getElementById(buttonId);
+        if (!btn) return;
+        if (busy) {
+            if (!btn.dataset.originalText) btn.dataset.originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = busyText || 'Laster...';
+            return;
+        }
+        btn.disabled = false;
+        if (btn.dataset.originalText) {
+            btn.textContent = btn.dataset.originalText;
+            delete btn.dataset.originalText;
+        }
+    }
+
+    function appendResponsibleOption(select, user) {
+        if (!select || !user) return;
+        const option = document.createElement('option');
+        option.value = user.username;
+        // Display full name if available, otherwise fall back to username
+        option.textContent = user.display_name && user.display_name.trim()
+            ? user.display_name
+            : user.username;
+        select.appendChild(option);
+    }
+
+    async function loadResponsibleUsers() {
+        try {
+            console.log('[loadResponsibleUsers] Fetching /users/public-list');
+            const res = await fetch('/users/public-list', { headers: getAuthHeader() });
+            console.log('[loadResponsibleUsers] Response status:', res.status);
+
+            if (!res.ok) {
+                const errData = await res.text();
+                console.error('[loadResponsibleUsers] Failed to load users:', res.status, errData);
+                return;
+            }
+
+            availableUsers = await res.json();
+            console.log('[loadResponsibleUsers] Loaded users:', availableUsers);
+            const select = document.getElementById('responsible');
+            if (!select) return;
+
+            select.innerHTML = '';
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = 'Velg ansvarlig...';
+            select.appendChild(defaultOption);
+
+            for (const u of availableUsers) {
+                appendResponsibleOption(select, u);
+            }
+        } catch (err) {
+            console.error('[loadResponsibleUsers] Exception:', err);
+        }
+    }
+
+    async function loadUserSession() {
+        const token = localStorage.getItem(TOKEN_KEY);
+        console.log('[loadUserSession] Token check:', token ? 'Found' : 'Not found');
+
+        if (!token) {
+            console.log('[loadUserSession] No token, showing login screen');
+            document.getElementById('notLoggedIn').classList.remove('hidden');
+            document.getElementById('loggedInContent').classList.add('hidden');
+            return;
+        }
+
+        try {
+            console.log('[loadUserSession] Token found, calling /auth/me');
+            const res = await fetch('/auth/me', { headers: getAuthHeader() });
+            console.log('[loadUserSession] /auth/me response status:', res.status);
+
+            if (!res.ok) {
+                console.log('[loadUserSession] Auth failed, removing token');
+                localStorage.removeItem(TOKEN_KEY);
+                document.getElementById('notLoggedIn').classList.remove('hidden');
+                document.getElementById('loggedInContent').classList.add('hidden');
+                return;
+            }
+
+            const data = await res.json();
+            console.log('[loadUserSession] Auth success, user:', data.user.username);
+            currentUser = data.user;
+
+            document.getElementById('notLoggedIn').classList.add('hidden');
+            document.getElementById('loggedInContent').classList.remove('hidden');
+
+            if (currentUser.role === 'admin') {
+                document.getElementById('sendRemindersBtn').style.display = 'inline-block';
+            }
+
+            await loadResponsibleUsers();
+            await loadProfileNav();
+            await loadTodos();
+            updateMobileNavButtons();
+        } catch (err) {
+            console.error('[loadUserSession] Exception:', err);
+            document.getElementById('notLoggedIn').classList.remove('hidden');
+            document.getElementById('loggedInContent').classList.add('hidden');
+        }
+    }
+
+    function resetForm() {
+        editingId = null;
+        document.getElementById('task').value = '';
+        document.getElementById('status').value = 'Ny';
+        document.getElementById('due_date').value = '';
+        document.getElementById('responsible').value = '';
+        document.getElementById('todoActionBtn').textContent = 'Opprett aktivitet';
+        clearTodoValidation();
+    }
+
+    async function saveTodo() {
+        const taskValue = document.getElementById('task').value.trim();
+        const statusValue = document.getElementById('status').value;
+        const dueDateValue = document.getElementById('due_date').value || null;
+        const responsibleValue = document.getElementById('responsible').value.trim();
+
+        if (!taskValue) {
+            showTodoValidation('Oppgave er påkrevd.');
+            return;
+        }
+        if (!responsibleValue) {
+            showTodoValidation('Velg ansvarlig fra listen.');
+            return;
+        }
+        if (dueDateValue && Number.isNaN(new Date(dueDateValue).getTime())) {
+            showTodoValidation('Ugyldig frist. Velg en gyldig dato/tid.');
+            return;
+        }
+        clearTodoValidation();
+        clearStatusMessage();
+
+        const payload = {
+            task: taskValue,
+            status: statusValue,
+            due_date: dueDateValue,
+            responsible: responsibleValue
+        };
+
+        const method = editingId ? 'PUT' : 'POST';
+        const url = editingId ? `/todos/${editingId}` : '/todos';
+        const isEditing = Boolean(editingId);
+
+        setButtonBusy('todoActionBtn', true, isEditing ? 'Lagrer...' : 'Oppretter...');
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const errMsg = data.error || 'Kunne ikke lagre aktivitet';
+                showTodoValidation(errMsg);
+                showStatusMessage('error', errMsg);
+                return;
+            }
+
+            resetForm();
+            await loadTodos();
+            showStatusMessage('success', isEditing ? 'Aktivitet oppdatert.' : 'Aktivitet opprettet.');
+        } finally {
+            setButtonBusy('todoActionBtn', false);
+        }
+    }
+
+    function editTodo(id) {
+        const t = allTodos.find(x => x.id === id);
+        if (!t) return;
+
+        editingId = id;
+        document.getElementById('task').value = t.task || '';
+        document.getElementById('status').value = t.status || 'Ny';
+        document.getElementById('due_date').value = toInputDateTime(t.due_date);
+
+        const responsibleEl = document.getElementById('responsible');
+        const responsibleValue = t.responsible || '';
+        if (responsibleEl) {
+            if (![...responsibleEl.options].some(o => o.value === responsibleValue) && responsibleValue) {
+                // Create a simple user object for appendResponsibleOption
+                appendResponsibleOption(responsibleEl, { username: responsibleValue, display_name: responsibleValue });
+            }
+            responsibleEl.value = responsibleValue;
+        }
+
+        document.getElementById('todoActionBtn').textContent = 'Lagre aktivitet';
+        clearTodoValidation();
+        showStatusMessage('info', 'Redigeringsmodus aktivert.');
+    }
+
+    async function deleteTodo(id) {
+        if (!currentUser || currentUser.role !== 'admin') {
+            showStatusMessage('error', 'Kun admins kan slette aktiviteter.');
+            return;
+        }
+        if (!confirm('Slette aktivitet?')) return;
+
+        const deleteBtn = document.getElementById(`delete-btn-${id}`);
+        if (deleteBtn) {
+            deleteBtn.disabled = true;
+            deleteBtn.dataset.originalText = deleteBtn.textContent;
+            deleteBtn.textContent = 'Sletter...';
+        }
+
+        try {
+            const res = await fetch(`/todos/${id}`, {
+                method: 'DELETE',
+                headers: getAuthHeader()
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                showStatusMessage('error', data.error || 'Kunne ikke slette aktivitet.');
+                return;
+            }
+            await loadTodos();
+            showStatusMessage('success', 'Aktivitet slettet.');
+        } finally {
+            if (deleteBtn && deleteBtn.dataset.originalText) {
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = deleteBtn.dataset.originalText;
+                deleteBtn.removeAttribute('data-original-text');
+            }
+        }
+    }
+
+    async function sendReminders() {
+        const daysAheadRaw = prompt('Send påminnelse for oppgaver med frist innen X dager:', '2');
+        if (daysAheadRaw === null) return;
+
+        const daysAhead = Number(daysAheadRaw);
+        if (!Number.isInteger(daysAhead) || daysAhead < 0 || daysAhead > 365) {
+            showStatusMessage('error', 'Ugyldig antall dager. Oppgi et heltall mellom 0 og 365.');
+            return;
+        }
+
+        setButtonBusy('sendRemindersBtn', true, 'Sender...');
+        clearStatusMessage();
+        try {
+            const res = await fetch('/notifications/due-reminders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
+                body: JSON.stringify({ daysAhead })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                const errorMessage = data?.error || 'Feil';
+                showStatusMessage('error', errorMessage);
+                return;
+            }
+
+            showStatusMessage('success', `Påminnelser sendt. Skannet: ${data.scanned}, sendt: ${data.sent}, hoppet over: ${data.skipped}`);
+        } catch (err) {
+            showStatusMessage('error', 'Feil ved sending av påminnelser: ' + err.message);
+        } finally {
+            setButtonBusy('sendRemindersBtn', false);
+        }
+    }
+
+    function renderTodos() {
+        const list = document.getElementById('todoList');
+        list.innerHTML = '';
+
+        if (!allTodos.length) {
+            const empty = document.createElement('li');
+            empty.className = 'todo-item';
+            empty.textContent = 'Ingen aktiviteter enda.';
+            list.appendChild(empty);
+            return;
+        }
+
+        for (const t of allTodos) {
+            const created = t?.created_date ? new Date(t.created_date).toLocaleString('nb-NO') : '-';
+            const due = t?.due_date ? new Date(t.due_date).toLocaleString('nb-NO') : '-';
+
+            const li = document.createElement('li');
+            li.className = 'todo-item';
+
+            const taskWrap = document.createElement('div');
+            taskWrap.className = 'task-wrap';
+            const strong = document.createElement('strong');
+            strong.textContent = t.task || '-';
+            const meta = document.createElement('div');
+            meta.className = 'meta';
+            meta.textContent = `Opprettet: ${created}`;
+            taskWrap.appendChild(strong);
+            taskWrap.appendChild(meta);
+
+            const status = document.createElement('div');
+            status.textContent = t.status || '-';
+
+            const dueEl = document.createElement('div');
+            dueEl.textContent = due;
+
+            const responsible = document.createElement('div');
+            responsible.textContent = t.responsible || '-';
+
+            const actions = document.createElement('div');
+            actions.className = 'todo-actions';
+            const editBtn = document.createElement('button');
+            editBtn.className = 'btn-edit';
+            editBtn.textContent = 'Rediger';
+            editBtn.addEventListener('click', () => editTodo(t.id));
+            actions.appendChild(editBtn);
+
+            if (currentUser && currentUser.role === 'admin') {
+                const delBtn = document.createElement('button');
+                delBtn.className = 'btn-delete';
+                delBtn.id = `delete-btn-${t.id}`;
+                delBtn.textContent = 'Slett';
+                delBtn.addEventListener('click', () => deleteTodo(t.id));
+                actions.appendChild(delBtn);
+            }
+
+            li.appendChild(taskWrap);
+            li.appendChild(status);
+            li.appendChild(dueEl);
+            li.appendChild(responsible);
+            li.appendChild(actions);
+            list.appendChild(li);
+        }
+    }
+
+    async function loadTodos() {
+        const res = await fetch('/todos', { headers: getAuthHeader() });
+        const data = await res.json().catch(() => []);
+        if (!res.ok) {
+            showStatusMessage('error', data.error || 'Kunne ikke hente aktiviteter.');
+            return;
+        }
+        allTodos = data;
+        renderTodos();
+    }
+
+    async function loadProfileNav() {
+        try {
+            const token = localStorage.getItem(TOKEN_KEY);
+            if (!token) {
+                document.getElementById('userMenuBtn').style.display = 'none';
+                document.getElementById('userMenuLoginBtn').style.display = 'flex';
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/profile`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const profile = await response.json();
+                document.getElementById('userMenuAvatar').src = `${API_URL}/avatars/${profile.avatar || 'avatar1'}?v=${Date.now()}`;
+                document.getElementById('userMenuUsername').textContent = profile.username;
+                document.getElementById('userMenuBtn').style.display = 'flex';
+                document.getElementById('userMenuLoginBtn').style.display = 'none';
+            }
+        } catch (err) {
+            console.error('Error loading profile nav:', err);
+        }
+    }
+
+    function toggleUserMenu() {
+        const dropdown = document.getElementById('userMenuDropdown');
+        dropdown.classList.toggle('active');
+    }
+
+    function closeUserMenu() {
+        const dropdown = document.getElementById('userMenuDropdown');
+        dropdown.classList.remove('active');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const userMenuContainer = document.getElementById('userMenuContainer');
+        if (userMenuContainer && !userMenuContainer.contains(e.target)) {
+            closeUserMenu();
+        }
+    });
+
+    // Hamburger menu functionality
+    function toggleHamburgerMenu() {
+        const hamburger = document.getElementById('hamburgerMenu');
+        const mobileNav = document.getElementById('mobileNav');
+        hamburger.classList.toggle('active');
+        mobileNav.classList.toggle('active');
+    }
+
+    function closeMobileMenu() {
+        const hamburger = document.getElementById('hamburgerMenu');
+        const mobileNav = document.getElementById('mobileNav');
+        hamburger.classList.remove('active');
+        mobileNav.classList.remove('active');
+    }
+
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('#mobileNav a').forEach(link => {
+        link.addEventListener('click', closeMobileMenu);
+    });
+
+    document.getElementById('userMenuBtn')?.addEventListener('click', toggleUserMenu);
+    document.getElementById('userMenuLogout')?.addEventListener('click', logout);
+    document.getElementById('hamburgerMenu')?.addEventListener('click', toggleHamburgerMenu);
+    document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
+        logout();
+        closeMobileMenu();
+    });
+    // Sync mobile nav visibility with login state
+    function updateMobileNavButtons() {
+        const mobileProfileLink = document.getElementById('mobileProfileLink');
+        const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+        const mobileLoginBtn = document.getElementById('mobileLoginBtn');
+
+        if (currentUser) {
+            if (mobileProfileLink) mobileProfileLink.style.display = 'block';
+            if (mobileLogoutBtn) mobileLogoutBtn.style.display = 'block';
+            if (mobileLoginBtn) mobileLoginBtn.style.display = 'none';
+        } else {
+            if (mobileProfileLink) mobileProfileLink.style.display = 'none';
+            if (mobileLogoutBtn) mobileLogoutBtn.style.display = 'none';
+            if (mobileLoginBtn) mobileLoginBtn.style.display = 'block';
+        }
+    }
+
+    window.addEventListener('load', () => {
+        document.getElementById('responsible')?.addEventListener('change', clearTodoValidation);
+        document.getElementById('task')?.addEventListener('input', clearTodoValidation);
+        clearStatusMessage();
+        loadUserSession();
+    });
+</script>
+
+</body>
+</html>

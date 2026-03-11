@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Min profil</title>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(90deg, #853c49 0%, #1d3b7c 100%);
+            color: #333;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #853c49 0%, #1d3b7c 100%);
+            color: #fff;
+            padding: 24px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+        }
+
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .nav-left {
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-left:last-child {
+            margin-left: auto;
+        }
+
+        nav a, nav button {
+            text-decoration: none;
+            border: 2px solid #fff;
+            cursor: pointer;
+            background: #fff;
+            color: #1d3b7c;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        nav a:hover, nav button:hover {
+            background: #f0f2ff;
+            border-color: #1d3b7c;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            color: #1d3b7c;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+            border: 2px solid #fff;
+            background: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .profile-button:hover {
+            background: #f0f2ff;
+            border-color: #1d3b7c;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .avatar-preview {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .avatar-preview img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 3px solid #3498db;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .avatar-options {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .avatar-option {
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .avatar-option:hover {
+            border-color: #3498db;
+        }
+
+        .avatar-option.selected {
+            border-color: #3498db;
+            background: #ecf0f1;
+        }
+
+        .avatar-option img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2980b9;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            padding-top: 20px;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>👤 Min profil</h1>
+        <nav>
+            <button class="hamburger-menu" id="hamburgerMenu">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <div class="nav-menu mobile" id="mobileNav">
+              <a href="/">Hjem</a>
+              <a href="/premieoversikt.html">Premieoversikt</a>
+              <a href="/todos.html">Todos</a>
+              <a href="/users.html">Brukeradmin</a>
+            </div>
+            <div class="nav-left user-menu" id="userMenuContainer">
+              <button class="user-menu-btn" id="userMenuBtn" style="display:none;">
+                <img src="" alt="Profile" class="user-menu-avatar" id="userMenuAvatar">
+                <span id="userMenuUsername">...</span>
+                <span>▼</span>
+              </button>
+              <div class="user-menu-dropdown" id="userMenuDropdown">
+                <a href="/profile.html">Min profil</a>
+                <button id="userMenuLogout">Logg ut</button>
+              </div>
+              <a href="/login.html" class="user-menu-btn" id="userMenuLoginBtn" style="display:none;">
+                Logg inn
+              </a>
+            </div>
+        </nav>
+    </div>
+
+    <div class="content">
+
+    <div id="message" class="message"></div>
+
+    <div id="content">Laster profil...</div>
+</div>
+
+<script>
+    const API_URL = window.location.origin;
+    const TOKEN_KEY = 'gm_auth_token';
+
+    async function getToken() {
+        return localStorage.getItem(TOKEN_KEY);
+    }
+
+    async function loadProfile() {
+        try {
+            const token = await getToken();
+            const response = await fetch(`${API_URL}/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) window.location.href = 'login.html';
+                throw new Error('Feil ved henting av profil');
+            }
+
+            const profile = await response.json();
+            renderProfile(profile);
+        } catch (err) {
+            document.getElementById('content').innerHTML = `<div class="error">Feil: ${err.message}</div>`;
+        }
+    }
+
+    function renderProfile(profile) {
+        const notifyPrefs = profile.notify_preferences || {};
+        const assignmentChecked = notifyPrefs.assignment !== false ? 'checked' : '';
+        const deadlineChecked = notifyPrefs.deadline !== false ? 'checked' : '';
+
+        const html = `
+                <div class="avatar-preview">
+                    <img src="${API_URL}/avatars/${profile.avatar || 'avatar1'}" alt="Din avatar" id="avatarPreview">
+                </div>
+
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label>Brukernavn</label>
+                        <input type="text" value="${profile.username}" disabled style="background: #ecf0f1; cursor: not-allowed;">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Fornavn</label>
+                        <input type="text" id="firstName" placeholder="Ola" value="${profile.first_name || ''}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Etternavn</label>
+                        <input type="text" id="lastName" placeholder="Nordmann" value="${profile.last_name || ''}">
+                    </div>
+
+                    <div class="form-group">
+                        <label>E-post *</label>
+                        <input type="email" id="email" placeholder="ola@example.com" value="${profile.email || ''}" required>
+                    </div>
+
+                    <div class="section-title">Velg avatar</div>
+                    <div class="avatar-options" id="avatarOptions"></div>
+                    <input type="hidden" id="selectedAvatar" value="${profile.avatar || 'avatar1'}">
+
+                    <div class="section-title">Varslingsinnstillinger</div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="notifyAssignment" ${assignmentChecked}>
+                            <label for="notifyAssignment" style="margin: 0;">Varsle når oppgave blir tildelt</label>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="notifyDeadline" ${deadlineChecked}>
+                            <label for="notifyDeadline" style="margin: 0;">Varsle når fristen nærmer seg</label>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn-primary">Lagre endringer</button>
+                        <button type="button" class="btn-secondary" onclick="logout()">Logg ut</button>
+                    </div>
+                </form>
+            `;
+        document.getElementById('content').innerHTML = html;
+        renderAvatarOptions(profile.avatar || 'avatar1');
+        setupFormListener();
+    }
+
+    function renderAvatarOptions(selectedAvatar) {
+        const avatars = ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', 'avatar7', 'avatar8'];
+        const html = avatars.map(avatar => `
+                <div class="avatar-option ${avatar === selectedAvatar ? 'selected' : ''}" data-avatar="${avatar}" onclick="selectAvatar('${avatar}')">
+                    <img src="${API_URL}/avatars/${avatar}" alt="${avatar}">
+                </div>
+            `).join('');
+        document.getElementById('avatarOptions').innerHTML = html;
+    }
+
+    function selectAvatar(avatarName) {
+        document.querySelectorAll('.avatar-option').forEach(el => {
+            el.classList.remove('selected');
+        });
+        document.querySelector(`[data-avatar="${avatarName}"]`)?.classList.add('selected');
+        document.getElementById('selectedAvatar').value = avatarName;
+        document.getElementById('avatarPreview').src = `${API_URL}/avatars/${avatarName}`;
+    }
+
+    function setupFormListener() {
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const avatar = document.getElementById('selectedAvatar').value;
+            const notifyAssignment = document.getElementById('notifyAssignment').checked;
+            const notifyDeadline = document.getElementById('notifyDeadline').checked;
+
+            if (!email) {
+                showMessage('E-post er påkrevd', 'error');
+                return;
+            }
+
+            try {
+                const token = await getToken();
+                const response = await fetch(`${API_URL}/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        first_name: firstName,
+                        last_name: lastName,
+                        email,
+                        avatar,
+                        notify_preferences: {
+                            assignment: notifyAssignment,
+                            deadline: notifyDeadline
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Feil ved lagring');
+                }
+
+                showMessage('Profil oppdatert', 'success');
+            } catch (err) {
+                showMessage(`Feil: ${err.message}`, 'error');
+            }
+        });
+    }
+
+    function showMessage(msg, type) {
+        const messageDiv = document.getElementById('message');
+        messageDiv.className = `message ${type}`;
+        messageDiv.textContent = msg;
+        setTimeout(() => messageDiv.className = 'message', 4000);
+    }
+
+    async function logout() {
+        const token = await getToken();
+        await fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        localStorage.removeItem(TOKEN_KEY);
+        closeUserMenu();
+        window.location.href = 'login.html';
+    }
+
+    function toggleUserMenu() {
+        const dropdown = document.getElementById('userMenuDropdown');
+        dropdown.classList.toggle('active');
+    }
+
+    function closeUserMenu() {
+        const dropdown = document.getElementById('userMenuDropdown');
+        dropdown.classList.remove('active');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        const userMenuContainer = document.getElementById('userMenuContainer');
+        if (userMenuContainer && !userMenuContainer.contains(e.target)) {
+            closeUserMenu();
+        }
+    });
+
+    // Hamburger menu functionality
+    function toggleHamburgerMenu() {
+        const hamburger = document.getElementById('hamburgerMenu');
+        const mobileNav = document.getElementById('mobileNav');
+        hamburger.classList.toggle('active');
+        mobileNav.classList.toggle('active');
+    }
+
+    function closeMobileMenu() {
+        const hamburger = document.getElementById('hamburgerMenu');
+        const mobileNav = document.getElementById('mobileNav');
+        hamburger.classList.remove('active');
+        mobileNav.classList.remove('active');
+    }
+
+    // Close mobile menu when clicking a link
+    document.querySelectorAll('#mobileNav a').forEach(link => {
+        link.addEventListener('click', closeMobileMenu);
+    });
+
+    // Load profile info for nav button
+    async function loadProfileNav() {
+        try {
+            const token = await getToken();
+            if (!token) {
+                document.getElementById('userMenuBtn').style.display = 'none';
+                document.getElementById('userMenuLoginBtn').style.display = 'flex';
+                return;
+            }
+
+            const response = await fetch(`${API_URL}/profile`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const profile = await response.json();
+                document.getElementById('userMenuAvatar').src = `${API_URL}/avatars/${profile.avatar || 'avatar1'}`;
+                document.getElementById('userMenuUsername').textContent = profile.username;
+                document.getElementById('userMenuBtn').style.display = 'flex';
+                document.getElementById('userMenuLoginBtn').style.display = 'none';
+            }
+        } catch (err) {
+            console.error('Error loading profile nav:', err);
+        }
+    }
+
+    document.getElementById('userMenuBtn')?.addEventListener('click', toggleUserMenu);
+    document.getElementById('userMenuLogout')?.addEventListener('click', logout);
+    document.getElementById('hamburgerMenu')?.addEventListener('click', toggleHamburgerMenu);
+    document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
+        logout();
+        closeMobileMenu();
+    });
+    loadProfile();
+    loadProfileNav();
+</script>
+</div>
+</body>
+</html>
