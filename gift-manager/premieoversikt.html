@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
-    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
     <title>Premieoversikt</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="stylesheet" href="/style.css" />
     <style>
         :root {
             --norway-red: #853c49;
@@ -30,7 +30,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -55,7 +55,7 @@
             opacity: 0.9;
         }
 
-        .nav {
+        nav {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -67,6 +67,61 @@
         .nav-left {
             display: flex;
             gap: 12px;
+        }
+
+        nav a, nav button {
+            text-decoration: none;
+            border: 2px solid #fff;
+            cursor: pointer;
+            background: #fff;
+            color: var(--norway-blue);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        nav a:hover, nav button:hover {
+            background: #f0f2ff;
+            border-color: var(--norway-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-left {
+            display: flex;
+            gap: 12px;
+        }
+
+        .nav-left:last-child {
+            margin-left: auto;
+        }
+
+        .profile-button {
+            padding: 10px 16px;
+            color: var(--norway-blue);
+            text-decoration: none;
+            border-radius: 6px;
+            transition: all 0.2s;
+            border: 2px solid #fff;
+            background: #fff;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .profile-button:hover {
+            background: #f0f2ff;
+            border-color: var(--norway-blue);
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
         }
 
         .nav a, .nav button {
@@ -132,6 +187,19 @@
             outline: none;
             border-color: var(--norway-blue);
             box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.12);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .form-group div {
+            display: flex;
+            flex-direction: column;
         }
 
         .checkbox-group {
@@ -490,6 +558,7 @@
     </style>
     <script>
         const TOKEN_KEY = 'gm_auth_token';
+        const API_URL = window.location.origin;
         let currentUser = null;
         let editingId = null;
 
@@ -520,7 +589,32 @@
                 } catch (_) {}
             }
             localStorage.removeItem(TOKEN_KEY);
+            closeUserMenu();
             window.location.href = '/';
+        }
+
+        function toggleHamburgerMenu() {
+            const hamburger = document.getElementById('hamburgerMenu');
+            const mobileNav = document.getElementById('mobileNav');
+            hamburger.classList.toggle('active');
+            mobileNav.classList.toggle('active');
+        }
+
+        function closeMobileMenu() {
+            const hamburger = document.getElementById('hamburgerMenu');
+            const mobileNav = document.getElementById('mobileNav');
+            hamburger.classList.remove('active');
+            mobileNav.classList.remove('active');
+        }
+
+        function closeUserMenu() {
+            const dropdown = document.getElementById('userMenuDropdown');
+            dropdown.classList.remove('active');
+        }
+
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userMenuDropdown');
+            dropdown.classList.toggle('active');
         }
 
         async function loadUserSession() {
@@ -528,6 +622,8 @@
             if (!token) {
                 document.getElementById('loggedInContent').style.display = 'none';
                 document.getElementById('notLoggedIn').style.display = 'block';
+                document.getElementById('userMenuBtn').style.display = 'none';
+                document.getElementById('userMenuLoginBtn').style.display = 'flex';
                 return;
             }
 
@@ -540,6 +636,8 @@
                     localStorage.removeItem(TOKEN_KEY);
                     document.getElementById('loggedInContent').style.display = 'none';
                     document.getElementById('notLoggedIn').style.display = 'block';
+                    document.getElementById('userMenuBtn').style.display = 'none';
+                    document.getElementById('userMenuLoginBtn').style.display = 'flex';
                     return;
                 }
 
@@ -547,12 +645,39 @@
                 currentUser = data.user;
                 document.getElementById('loggedInContent').style.display = 'block';
                 document.getElementById('notLoggedIn').style.display = 'none';
-                document.getElementById('logoutBtn').style.display = 'inline-block';
-                loadGifts();
+                await loadProfileNav();
+                await loadGifts();
             } catch (e) {
                 localStorage.removeItem(TOKEN_KEY);
                 document.getElementById('loggedInContent').style.display = 'none';
                 document.getElementById('notLoggedIn').style.display = 'block';
+                document.getElementById('userMenuBtn').style.display = 'none';
+                document.getElementById('userMenuLoginBtn').style.display = 'flex';
+            }
+        }
+
+        async function loadProfileNav() {
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                if (!token) {
+                    document.getElementById('userMenuBtn').style.display = 'none';
+                    document.getElementById('userMenuLoginBtn').style.display = 'flex';
+                    return;
+                }
+
+                const response = await fetch(`${API_URL}/profile`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const profile = await response.json();
+                    document.getElementById('userMenuAvatar').src = `${API_URL}/avatars/${profile.avatar || 'avatar1'}?v=${Date.now()}`;
+                    document.getElementById('userMenuUsername').textContent = profile.username;
+                    document.getElementById('userMenuBtn').style.display = 'flex';
+                    document.getElementById('userMenuLoginBtn').style.display = 'none';
+                }
+            } catch (err) {
+                console.error('Error loading profile nav:', err);
             }
         }
 
@@ -604,7 +729,7 @@
                 document.getElementById('responsible').value = '';
                 document.getElementById('completed').checked = false;
 
-                loadGifts();
+                await loadGifts();
             } catch (err) {
                 alert('Feil: ' + err.message);
             }
@@ -615,8 +740,8 @@
                 headers: getAuthHeader()
             })
                 .then(response => response.json())
-                .then(gifts => {
-                    const gift = gifts.find(g => g.id === id);
+                .then(giftsList => {
+                    const gift = giftsList.find(g => g.id === id);
                     if (gift) {
                         const isCompleted = isCompletedValue(gift.completed);
                         document.getElementById('gift_name').value = gift.gift_name;
@@ -646,7 +771,7 @@
                     });
                     const result = await response.text();
                     alert(result);
-                    loadGifts();
+                    await loadGifts();
                 } catch (err) {
                     alert('Feil: ' + err.message);
                 }
@@ -658,10 +783,9 @@
                 const response = await fetch('/gifts', {
                     headers: getAuthHeader()
                 });
-                const gifts = await response.json();
 
                 // Store all gifts globally for filtering
-                window.allGifts = gifts;
+                window.allGifts = await response.json();
 
                 // Apply filters and render
                 filterAndRenderGifts();
@@ -754,57 +878,128 @@
             });
         }
 
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            const userMenuContainer = document.getElementById('userMenuContainer');
+            if (userMenuContainer && !userMenuContainer.contains(e.target)) {
+                closeUserMenu();
+            }
+        });
+
+        // Close mobile menu when clicking a link
+        document.querySelectorAll('#mobileNav a').forEach(link => {
+            link.addEventListener('click', closeMobileMenu);
+        });
+
         window.onload = function() {
-            document.getElementById('logoutBtn').addEventListener('click', logout);
-
             // Add event listeners for dynamic filtering
-            document.getElementById('searchInput').addEventListener('input', filterAndRenderGifts);
-            document.getElementById('filterTilgjengelig').addEventListener('change', filterAndRenderGifts);
-            document.getElementById('filterFullfort').addEventListener('change', filterAndRenderGifts);
+            document.getElementById('searchInput')?.addEventListener('input', filterAndRenderGifts);
+            document.getElementById('filterTilgjengelig')?.addEventListener('change', filterAndRenderGifts);
+            document.getElementById('filterFullfort')?.addEventListener('change', filterAndRenderGifts);
 
+            document.getElementById('userMenuBtn')?.addEventListener('click', toggleUserMenu);
+            document.getElementById('userMenuLogout')?.addEventListener('click', logout);
+            document.getElementById('hamburgerMenu')?.addEventListener('click', toggleHamburgerMenu);
+            document.getElementById('mobileLogoutBtn')?.addEventListener('click', () => {
+                logout();
+                closeMobileMenu();
+            });
             loadUserSession();
         };
+
     </script>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🏆 Premieoversikt</h1>
-            <p>Gaver og premier i forbindelse med 17. mai 2026</p>
-            <div class="nav">
-                <div class="nav-left">
-                    <a href="/">Hjem</a>
-                    <a href="/premieoversikt.html">Premieoversikt</a>
+<div class="container">
+    <div class="header">
+        <h1>🏆 Premieoversikt</h1>
+        <p>Gaver og premier i forbindelse med 17. mai 2026</p>
+        <nav>
+            <button class="hamburger-menu" id="hamburgerMenu">
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+            <div class="nav-menu" id="desktopNav">
+              <div class="nav-left">
+                <a href="/">Hjem</a>
+                <a href="/premieoversikt.html">Premieoversikt</a>
+                <a href="/todos.html">Todos</a>
+                <a href="/users.html">Brukeradmin</a>
+              </div>
+              <div class="nav-left user-menu" id="userMenuContainer">
+                <button class="user-menu-btn" id="userMenuBtn" style="display:none;">
+                  <img src="" alt="Profile" class="user-menu-avatar" id="userMenuAvatar">
+                  <span id="userMenuUsername">...</span>
+                  <span>▼</span>
+                </button>
+                <div class="user-menu-dropdown" id="userMenuDropdown">
+                  <a href="/profile.html">Min profil</a>
+                  <button id="userMenuLogout">Logg ut</button>
                 </div>
-                <button id="logoutBtn" style="display:none;">Logg ut</button>
+                <a href="/login.html" class="user-menu-btn" id="userMenuLoginBtn" style="display:none;">
+                  Logg inn
+                </a>
+              </div>
             </div>
+            <div class="nav-menu mobile" id="mobileNav">
+              <a href="/">Hjem</a>
+              <a href="/premieoversikt.html">Premieoversikt</a>
+              <a href="/todos.html">Todos</a>
+              <a href="/users.html">Brukeradmin</a>
+              <a href="/profile.html" id="mobileProfileLink" style="display:none;">Min profil</a>
+              <button id="mobileLogoutBtn" style="display:none;">Logg ut</button>
+              <a href="/login.html" id="mobileLoginBtn" style="display:none;">Logg inn</a>
+            </div>
+        </nav>
+    </div>
+
+    <div class="content">
+        <div id="notLoggedIn" class="card" style="display:none; background: var(--norway-light); padding: 20px; text-align: center;">
+            <h2>Du må logge inn</h2>
+            <p style="color: #555; margin-top: 10px;">For å se og administrere premier, må du logge inn.</p>
+            <a href="/" style="display: inline-block; background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; margin-top: 15px;">Gå til innlogging</a>
         </div>
 
-        <div class="content">
-            <div id="notLoggedIn" class="card" style="display:none; background: var(--norway-light); padding: 20px; text-align: center;">
-                <h2>Du må logge inn</h2>
-                <p style="color: #555; margin-top: 10px;">For å se og administrere premier, må du logge inn.</p>
-                <a href="/" style="display: inline-block; background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%); color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; margin-top: 15px;">Gå til innlogging</a>
-            </div>
-
-            <div id="loggedInContent" style="display:none;">
+        <div id="loggedInContent" style="display:none;">
             <!-- Form Section -->
             <div class="form-section">
                 <h2>Legg til ny premie</h2>
                 <div class="form-group">
-                    <input type="text" id="giver" placeholder="Firma" required>
-                    <input type="text" id="gift_name" placeholder="Premie" required>
+                    <div>
+                        <label for="giver">Firma</label>
+                        <input type="text" id="giver" placeholder="Firma" required>
+                    </div>
+                    <div>
+                        <label for="gift_name">Premie</label>
+                        <input type="text" id="gift_name" placeholder="Premie" required>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <input type="number" id="price" placeholder="Pris (kr)" step="0.01" required>
-                    <input type="text" id="responsible" placeholder="Ansvarlig" required>
+                    <div>
+                        <label for="price">Pris (kr)</label>
+                        <input type="number" id="price" placeholder="Pris (kr)" step="0.01" required>
+                    </div>
+                    <div>
+                        <label for="responsible">Ansvarlig</label>
+                        <input type="text" id="responsible" placeholder="Ansvarlig" required>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <input type="text" id="contact_person" placeholder="Kontaktperson" required>
-                    <input type="tel" id="phone" placeholder="Telefon" required>
+                    <div>
+                        <label for="contact_person">Kontaktperson</label>
+                        <input type="text" id="contact_person" placeholder="Kontaktperson" required>
+                    </div>
+                    <div>
+                        <label for="phone">Telefon</label>
+                        <input type="tel" id="phone" placeholder="Telefon" required>
+                    </div>
                 </div>
                 <div class="form-group full">
-                    <input type="email" id="email" placeholder="E-post" required>
+                    <div>
+                        <label for="email">E-post</label>
+                        <input type="email" id="email" placeholder="E-post" required>
+                    </div>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="completed">
@@ -819,6 +1014,7 @@
             <div class="gifts-section">
                 <h2>Premier</h2>
                 <div class="filter-section">
+                    <label for="searchInput">Søk</label>
                     <input type="text" id="searchInput" placeholder="Søk etter premie..." />
                     <div class="filter-checkboxes">
                         <label>
@@ -833,11 +1029,12 @@
                 </div>
                 <ul id="giftsList"></ul>
             </div>
-            </div>
         </div>
-
-        <!-- Login Modal [Should be stored in db-->
-        <!-- Removed - using token-based auth from main page -->
     </div>
+
+    <!-- Login Modal [Should be stored in db-->
+    <!-- Removed - using token-based auth from main page -->
+</div>
 </body>
 </html>
+
