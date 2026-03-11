@@ -184,9 +184,10 @@ input:focus, select:focus {
 
 .form-grid-3 {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr auto;
     gap: 12px;
     margin-bottom: 12px;
+    align-items: flex-end;
 }
 
 .checkbox-group {
@@ -212,19 +213,20 @@ input:focus, select:focus {
    BUTTONS
    ======================================== */
 button {
-    padding: 12px 30px;
+    padding: 10px 24px;
     border: none;
     border-radius: 6px;
     font-size: 1em;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
+    height: fit-content;
 }
 
 .btn-primary {
     background: linear-gradient(135deg, var(--norway-red) 0%, var(--norway-blue) 100%);
     color: var(--norway-white);
-    flex: 1;
+    flex: 0;
 }
 
 .btn-primary:hover {

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Brukeradministrasjon</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="/style.css" />
     <style>
         * {
             margin: 0;
@@ -34,6 +34,7 @@
             background: linear-gradient(135deg, #853c49 0%, #1d3b7c 100%);
             color: #fff;
             padding: 24px 30px;
+            text-align: center;
         }
 
         .header h1 {
@@ -80,33 +81,7 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .profile-button {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 16px;
-            color: #1d3b7c;
-            text-decoration: none;
-            border-radius: 6px;
-            transition: all 0.2s;
-            border: 2px solid #fff;
-            background: #fff;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
 
-        .profile-button:hover {
-            background: #f0f2ff;
-            border-color: #1d3b7c;
-            transform: translateY(-2px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .profile-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-        }
 
         .content {
             padding: 30px;
@@ -325,18 +300,12 @@
             border-radius: 4px;
             margin-bottom: 15px;
         }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            color: #7f8c8d;
-        }
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>Brukeradministrasjon</h1>
+        <h1>👥 Brukeradministrasjon</h1>
         <nav>
             <button class="hamburger-menu" id="hamburgerMenu">
               <span></span>
@@ -385,29 +354,29 @@
 
         <form id="userForm">
             <div class="form-group">
-                <label>Brukernavn *</label>
+                <label for="username">Brukernavn *</label>
                 <input type="text" id="username" placeholder="brukernavn" required>
                 <div id="usernameError" class="error"></div>
             </div>
 
             <div class="form-group">
-                <label>Fornavn</label>
+                <label for="firstName">Fornavn</label>
                 <input type="text" id="firstName" placeholder="Ola">
             </div>
 
             <div class="form-group">
-                <label>Etternavn</label>
+                <label for="lastName">Etternavn</label>
                 <input type="text" id="lastName" placeholder="Nordmann">
             </div>
 
             <div class="form-group">
-                <label>E-post *</label>
+                <label for="email">E-post *</label>
                 <input type="email" id="email" placeholder="ola@example.com" required>
                 <div id="emailError" class="error"></div>
             </div>
 
             <div class="form-group">
-                <label>Rolle *</label>
+                <label for="role">Rolle *</label>
                 <select id="role" required>
                     <option value="user">Bruker</option>
                     <option value="admin">Administrator</option>
@@ -444,8 +413,12 @@
             });
 
             if (!response.ok) {
-                if (response.status === 401) window.location.href = 'login.html';
-                throw new Error('Feil ved henting av brukere');
+                if (response.status === 401) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+                document.getElementById('usersList').innerHTML = `<div class="error">Feil ved henting av brukere</div>`;
+                return;
             }
 
             const users = await response.json();
@@ -456,7 +429,7 @@
     }
 
     function renderUsersTable(users) {
-        const html = `
+        document.getElementById('usersList').innerHTML = `
                 <table>
                     <thead>
                         <tr>
@@ -493,7 +466,6 @@
                     </tbody>
                 </table>
             `;
-        document.getElementById('usersList').innerHTML = html;
     }
 
     function openCreateModal() {
@@ -540,7 +512,7 @@
 
     function renderAvatarOptions() {
         const avatars = ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6', 'avatar7', 'avatar8'];
-        const html = `
+        document.getElementById('avatarOptions').innerHTML = `
                 <input type="hidden" id="selectedAvatar" value="avatar1">
                 ${avatars.map(avatar => `
                     <div class="avatar-option" data-avatar="${avatar}" onclick="selectAvatar('${avatar}')">
@@ -548,7 +520,6 @@
                     </div>
                 `).join('')}
             `;
-        document.getElementById('avatarOptions').innerHTML = html;
     }
 
     document.getElementById('userForm').addEventListener('submit', async (e) => {
@@ -589,11 +560,13 @@
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || 'Feil ved lagring');
+                showMessage(`Feil: ${error.error || 'Feil ved lagring'}`, 'error');
+                return;
             }
 
             closeUserModal();
-            loadUsers();const msg = currentUserId ? 'Bruker oppdatert' : 'Bruker opprettet';
+            await loadUsers();
+            const msg = currentUserId ? 'Bruker oppdatert' : 'Bruker opprettet';
             showMessage(msg, 'success');
         } catch (err) {
             showMessage(`Feil: ${err.message}`, 'error');
@@ -610,9 +583,12 @@
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (!response.ok) throw new Error('Feil ved sletting');
+            if (!response.ok) {
+                showMessage('Feil ved sletting', 'error');
+                return;
+            }
 
-            loadUsers();
+            await loadUsers();
             showMessage('Bruker slettet', 'success');
         } catch (err) {
             showMessage(`Feil: ${err.message}`, 'error');

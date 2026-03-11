@@ -4,15 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="referrer" content="no-referrer" />
-    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
     <title>Todos</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+        .header {
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>Todos</h1>
+        <h1>✅ Todos</h1>
         <p>Opprett, rediger og administrer aktiviteter</p>
         <nav>
             <button class="hamburger-menu" id="hamburgerMenu">
@@ -54,18 +62,30 @@
             <div class="card">
                 <h2>Ny aktivitet</h2>
                 <div class="form-grid">
-                    <input id="task" type="text" placeholder="Oppgave" />
-                    <select id="status">
-                        <option>Ny</option>
-                        <option>Pågår</option>
-                        <option>Utført</option>
-                    </select>
+                    <div>
+                        <label for="task">Oppgave</label>
+                        <input id="task" type="text" placeholder="Oppgave" />
+                    </div>
+                    <div>
+                        <label for="status">Status</label>
+                        <select id="status">
+                            <option>Ny</option>
+                            <option>Pågår</option>
+                            <option>Utført</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-grid-3">
-                    <input id="due_date" type="datetime-local" placeholder="Frist" />
-                    <select id="responsible">
-                        <option value="">Velg ansvarlig...</option>
-                    </select>
+                    <div>
+                        <label for="due_date">Frist</label>
+                        <input id="due_date" type="datetime-local" placeholder="Frist" />
+                    </div>
+                    <div>
+                        <label for="responsible">Ansvarlig</label>
+                        <select id="responsible">
+                            <option value="">Velg ansvarlig...</option>
+                        </select>
+                    </div>
 
                     <button id="todoActionBtn" class="btn-primary" onclick="saveTodo()">Opprett aktivitet</button>
                 </div>
@@ -175,10 +195,9 @@
         const option = document.createElement('option');
         option.value = user.username;
         // Display full name if available, otherwise fall back to username
-        const displayName = user.display_name && user.display_name.trim()
+        option.textContent = user.display_name && user.display_name.trim()
             ? user.display_name
             : user.username;
-        option.textContent = displayName;
         select.appendChild(option);
     }
 
@@ -403,7 +422,11 @@
                 body: JSON.stringify({ daysAhead })
             });
             const data = await res.json().catch(() => ({}));
-            if (!res.ok) throw new Error(data.error || 'Feil');
+            if (!res.ok) {
+                const errorMessage = data?.error || 'Feil';
+                showStatusMessage('error', errorMessage);
+                return;
+            }
 
             showStatusMessage('success', `Påminnelser sendt. Skannet: ${data.scanned}, sendt: ${data.sent}, hoppet over: ${data.skipped}`);
         } catch (err) {
@@ -426,8 +449,8 @@
         }
 
         for (const t of allTodos) {
-            const created = t.created_date ? new Date(t.created_date).toLocaleString('nb-NO') : '-';
-            const due = t.due_date ? new Date(t.due_date).toLocaleString('nb-NO') : '-';
+            const created = t?.created_date ? new Date(t.created_date).toLocaleString('nb-NO') : '-';
+            const due = t?.due_date ? new Date(t.due_date).toLocaleString('nb-NO') : '-';
 
             const li = document.createElement('li');
             li.className = 'todo-item';
@@ -503,8 +526,7 @@
 
             if (response.ok) {
                 const profile = await response.json();
-                const avatarUrl = `${API_URL}/avatars/${profile.avatar || 'avatar1'}?v=${Date.now()}`;
-                document.getElementById('userMenuAvatar').src = avatarUrl;
+                document.getElementById('userMenuAvatar').src = `${API_URL}/avatars/${profile.avatar || 'avatar1'}?v=${Date.now()}`;
                 document.getElementById('userMenuUsername').textContent = profile.username;
                 document.getElementById('userMenuBtn').style.display = 'flex';
                 document.getElementById('userMenuLoginBtn').style.display = 'none';

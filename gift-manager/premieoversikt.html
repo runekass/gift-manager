@@ -4,10 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
-    <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
     <title>Premieoversikt</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="/style.css" />
     <style>
         :root {
             --norway-red: #853c49;
@@ -31,7 +30,7 @@
         }
 
         .container {
-            max-width: 900px;
+            max-width: 1200px;
             margin: 0 auto;
             background: white;
             border-radius: 12px;
@@ -99,6 +98,8 @@
         .nav-left:last-child {
             margin-left: auto;
         }
+
+        .profile-button {
             padding: 10px 16px;
             color: var(--norway-blue);
             text-decoration: none;
@@ -121,12 +122,6 @@
             width: 24px;
             height: 24px;
             border-radius: 50%;
-        }
-        }
-
-        .nav-left {
-            display: flex;
-            gap: 12px;
         }
 
         .nav a, .nav button {
@@ -192,6 +187,19 @@
             outline: none;
             border-color: var(--norway-blue);
             box-shadow: 0 0 0 3px rgba(0, 32, 91, 0.12);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .form-group div {
+            display: flex;
+            flex-direction: column;
         }
 
         .checkbox-group {
@@ -599,23 +607,15 @@
             mobileNav.classList.remove('active');
         }
 
-        // Close mobile menu when clicking a link
-        document.querySelectorAll('#mobileNav a').forEach(link => {
-            link.addEventListener('click', closeMobileMenu);
-        });
-
         function closeUserMenu() {
             const dropdown = document.getElementById('userMenuDropdown');
             dropdown.classList.remove('active');
         }
 
-        // Close dropdown when clicking outside
-        document.addEventListener('click', (e) => {
-            const userMenuContainer = document.getElementById('userMenuContainer');
-            if (userMenuContainer && !userMenuContainer.contains(e.target)) {
-                closeUserMenu();
-            }
-        });
+        function toggleUserMenu() {
+            const dropdown = document.getElementById('userMenuDropdown');
+            dropdown.classList.toggle('active');
+        }
 
         async function loadUserSession() {
             const token = localStorage.getItem(TOKEN_KEY);
@@ -645,8 +645,8 @@
                 currentUser = data.user;
                 document.getElementById('loggedInContent').style.display = 'block';
                 document.getElementById('notLoggedIn').style.display = 'none';
-                loadProfileNav();
-                loadGifts();
+                await loadProfileNav();
+                await loadGifts();
             } catch (e) {
                 localStorage.removeItem(TOKEN_KEY);
                 document.getElementById('loggedInContent').style.display = 'none';
@@ -671,8 +671,7 @@
 
                 if (response.ok) {
                     const profile = await response.json();
-                    const avatarUrl = `${API_URL}/avatars/${profile.avatar || 'avatar1'}?v=${Date.now()}`;
-                    document.getElementById('userMenuAvatar').src = avatarUrl;
+                    document.getElementById('userMenuAvatar').src = `${API_URL}/avatars/${profile.avatar || 'avatar1'}?v=${Date.now()}`;
                     document.getElementById('userMenuUsername').textContent = profile.username;
                     document.getElementById('userMenuBtn').style.display = 'flex';
                     document.getElementById('userMenuLoginBtn').style.display = 'none';
@@ -730,7 +729,7 @@
                 document.getElementById('responsible').value = '';
                 document.getElementById('completed').checked = false;
 
-                loadGifts();
+                await loadGifts();
             } catch (err) {
                 alert('Feil: ' + err.message);
             }
@@ -741,8 +740,8 @@
                 headers: getAuthHeader()
             })
                 .then(response => response.json())
-                .then(gifts => {
-                    const gift = gifts.find(g => g.id === id);
+                .then(giftsList => {
+                    const gift = giftsList.find(g => g.id === id);
                     if (gift) {
                         const isCompleted = isCompletedValue(gift.completed);
                         document.getElementById('gift_name').value = gift.gift_name;
@@ -772,7 +771,7 @@
                     });
                     const result = await response.text();
                     alert(result);
-                    loadGifts();
+                    await loadGifts();
                 } catch (err) {
                     alert('Feil: ' + err.message);
                 }
@@ -784,10 +783,9 @@
                 const response = await fetch('/gifts', {
                     headers: getAuthHeader()
                 });
-                const gifts = await response.json();
 
                 // Store all gifts globally for filtering
-                window.allGifts = gifts;
+                window.allGifts = await response.json();
 
                 // Apply filters and render
                 filterAndRenderGifts();
@@ -880,37 +878,6 @@
             });
         }
 
-        // Load profile info for nav button
-        async function loadProfileNav() {
-            try {
-                const token = localStorage.getItem(TOKEN_KEY);
-                if (!token) return;
-
-                const response = await fetch(`${API_URL}/profile`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const profile = await response.json();
-                    document.getElementById('userMenuAvatar').src = `${API_URL}/avatars/${profile.avatar || 'avatar1'}`;
-                    document.getElementById('userMenuUsername').textContent = profile.username;
-                }
-            } catch (err) {
-                console.error('Error loading profile nav:', err);
-            }
-        }
-
-        // User dropdown menu functions
-        function toggleUserMenu() {
-            const dropdown = document.getElementById('userMenuDropdown');
-            dropdown.classList.toggle('active');
-        }
-
-        function closeUserMenu() {
-            const dropdown = document.getElementById('userMenuDropdown');
-            dropdown.classList.remove('active');
-        }
-
         // Close dropdown when clicking outside
         document.addEventListener('click', (e) => {
             const userMenuContainer = document.getElementById('userMenuContainer');
@@ -918,21 +885,6 @@
                 closeUserMenu();
             }
         });
-
-        // Hamburger menu functions
-        function toggleHamburgerMenu() {
-            const hamburger = document.getElementById('hamburgerMenu');
-            const mobileNav = document.getElementById('mobileNav');
-            hamburger.classList.toggle('active');
-            mobileNav.classList.toggle('active');
-        }
-
-        function closeMobileMenu() {
-            const hamburger = document.getElementById('hamburgerMenu');
-            const mobileNav = document.getElementById('mobileNav');
-            hamburger.classList.remove('active');
-            mobileNav.classList.remove('active');
-        }
 
         // Close mobile menu when clicking a link
         document.querySelectorAll('#mobileNav a').forEach(link => {
@@ -953,7 +905,6 @@
                 closeMobileMenu();
             });
             loadUserSession();
-            loadProfileNav();
         };
 
     </script>
@@ -1015,19 +966,40 @@
             <div class="form-section">
                 <h2>Legg til ny premie</h2>
                 <div class="form-group">
-                    <input type="text" id="giver" placeholder="Firma" required>
-                    <input type="text" id="gift_name" placeholder="Premie" required>
+                    <div>
+                        <label for="giver">Firma</label>
+                        <input type="text" id="giver" placeholder="Firma" required>
+                    </div>
+                    <div>
+                        <label for="gift_name">Premie</label>
+                        <input type="text" id="gift_name" placeholder="Premie" required>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <input type="number" id="price" placeholder="Pris (kr)" step="0.01" required>
-                    <input type="text" id="responsible" placeholder="Ansvarlig" required>
+                    <div>
+                        <label for="price">Pris (kr)</label>
+                        <input type="number" id="price" placeholder="Pris (kr)" step="0.01" required>
+                    </div>
+                    <div>
+                        <label for="responsible">Ansvarlig</label>
+                        <input type="text" id="responsible" placeholder="Ansvarlig" required>
+                    </div>
                 </div>
                 <div class="form-group">
-                    <input type="text" id="contact_person" placeholder="Kontaktperson" required>
-                    <input type="tel" id="phone" placeholder="Telefon" required>
+                    <div>
+                        <label for="contact_person">Kontaktperson</label>
+                        <input type="text" id="contact_person" placeholder="Kontaktperson" required>
+                    </div>
+                    <div>
+                        <label for="phone">Telefon</label>
+                        <input type="tel" id="phone" placeholder="Telefon" required>
+                    </div>
                 </div>
                 <div class="form-group full">
-                    <input type="email" id="email" placeholder="E-post" required>
+                    <div>
+                        <label for="email">E-post</label>
+                        <input type="email" id="email" placeholder="E-post" required>
+                    </div>
                 </div>
                 <div class="checkbox-group">
                     <input type="checkbox" id="completed">
@@ -1042,6 +1014,7 @@
             <div class="gifts-section">
                 <h2>Premier</h2>
                 <div class="filter-section">
+                    <label for="searchInput">Søk</label>
                     <input type="text" id="searchInput" placeholder="Søk etter premie..." />
                     <div class="filter-checkboxes">
                         <label>

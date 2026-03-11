@@ -4,10 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="no-referrer" />
-  <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()" />
   <title>Hjem - 17. mai Arrangementsportal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/style.css" />
   <style>
     .login-grid {
       display: grid;
@@ -27,6 +26,13 @@
       width: auto;
       margin: 0;
     }
+    .header {
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
     .role-badge {
       display: inline-block;
       background: var(--norway-blue);
@@ -44,7 +50,7 @@
 <body>
   <div class="container">
     <div class="header">
-      <h1>17. mai Arrangementsportal</h1>
+      <h1>🏠 17. mai Arrangementsportal</h1>
       <p>Velkommen! Her finner du informasjon om 17. mai-arrangementet 2026</p>
       <nav>
         <button class="hamburger-menu" id="hamburgerMenu">
@@ -85,8 +91,14 @@
         <h2>Innlogging</h2>
         <p class="muted">Logg inn for å aktivere admin-funksjoner. Du kan velge å bli husket.</p>
         <div class="login-grid">
-          <input id="username" type="text" placeholder="Brukernavn" />
-          <input id="password" type="password" placeholder="Passord" />
+          <div>
+            <label for="username">Brukernavn</label>
+            <input id="username" type="text" placeholder="Brukernavn" />
+          </div>
+          <div>
+            <label for="password">Passord</label>
+            <input id="password" type="password" placeholder="Passord" />
+          </div>
         </div>
         <div class="login-grid full">
           <label class="checkbox-label">
@@ -219,16 +231,7 @@
       if (userMenuContainer && !userMenuContainer.contains(e.target)) {
         closeUserMenu();
       }
-    });    function setLoggedOutUI() {
-      document.getElementById('loginCard').style.display = 'block';
-      document.getElementById('userCard').style.display = 'none';
-      document.getElementById('userMenuBtn').style.display = 'none';
-      document.getElementById('mobileProfileLink').style.display = 'none';
-      document.getElementById('mobileLogoutBtn').style.display = 'none';
-      document.getElementById('whoami').textContent = '';
-      document.getElementById('username').value = '';
-      document.getElementById('password').value = '';
-    }
+    });
 
     async function login() {
       const username = document.getElementById('username').value.trim();
