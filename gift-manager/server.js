@@ -274,7 +274,13 @@ async function sendEmail({ to, subject, text, html }) {
                                 to: [{ email: to }]
                             }
                         ],
-                        from: { email: fromEmail },
+                        from: {
+                            email: fromEmail,
+                            name: 'Gift Manager'
+                        },
+                        reply_to: {
+                            email: fromEmail
+                        },
                         subject,
                         content: [
                             {
@@ -925,6 +931,21 @@ app.post('/notifications/due-reminders', authRequired, adminRequired, async (req
         console.error('Reminder job failed:', err.message);
         res.status(500).json({ error: 'Feil ved utsending av påminnelser' });
     }
+});
+
+// Email configuration diagnostic endpoint
+app.get('/api/email-config', (req, res) => {
+    const config = {
+        sendgrid_enabled: Boolean(process.env.SENDGRID_API_KEY),
+        sendgrid_from_email: process.env.SENDGRID_FROM_EMAIL || 'not-set',
+        sendgrid_from_email_trimmed: (process.env.SENDGRID_FROM_EMAIL || '').trim(),
+        sendgrid_from_email_length: (process.env.SENDGRID_FROM_EMAIL || '').length,
+        sendgrid_from_email_has_spaces: (process.env.SENDGRID_FROM_EMAIL || '').includes(' '),
+        gmail_enabled: Boolean(process.env.GMAIL_USER && process.env.GMAIL_PASS),
+        gmail_user: process.env.GMAIL_USER || 'not-set',
+        mail_service: process.env.SENDGRID_API_KEY ? 'SendGrid' : (process.env.GMAIL_USER ? 'Gmail' : 'None')
+    };
+    res.json(config);
 });
 
 app.listen(port, () => {
