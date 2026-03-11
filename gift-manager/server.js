@@ -11,7 +11,9 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,  // Try TLS instead of SSL (port 465)
+    secure: false,  // Use STARTTLS
     auth: {
         user: process.env.GMAIL_USER,
         pass: process.env.GMAIL_PASS
