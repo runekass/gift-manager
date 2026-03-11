@@ -13,33 +13,7 @@ const port = process.env.PORT || 3000;
 
 // Setup email transporter - supports Gmail and SendGrid
 function createTransporter() {
-    // Try SendGrid Web API first (no DNS setup required)
-    if (process.env.SENDGRID_API_KEY) {
-        console.log('[EMAIL] Configuring SendGrid Web API transporter...');
-        return nodemailer.createTransport({
-            host: 'smtp.sendgrid.net',
-            port: 587,
-            secure: false,
-            auth: {
-                user: 'apikey',
-                pass: process.env.SENDGRID_API_KEY
-            },
-            // Relaxed timeout settings for SendGrid
-            connectionTimeout: 30000,
-            socketTimeout: 30000,
-            greetingTimeout: 30000,
-            pool: {
-                maxConnections: 1,
-                maxMessages: Infinity,
-                rateDelta: 100,
-                rateLimit: 1
-            },
-            logger: true,
-            debug: true
-        });
-    }
-
-    // Fall back to Gmail
+    // Gmail (SMTP)
     console.log('[EMAIL] Configuring Gmail transporter...');
     return nodemailer.createTransport({
         host: 'smtp.gmail.com',
@@ -284,21 +258,50 @@ async function sendEmail({ to, subject, text, html }) {
     }
 
     try {
-        // Create a fresh transporter for this email (avoids connection reuse issues)
-        const transporter = createTransporter();
-
-        // Determine sender email
-        let fromEmail;
+        // Use SendGrid Web API if available (HTTP-based, works better with Railway)
         if (process.env.SENDGRID_API_KEY) {
-            // For SendGrid, use configured email or fallback
-            fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@giftmanager.com';
-        } else {
-            // For Gmail, use the configured Gmail address
-            fromEmail = process.env.GMAIL_USER;
+            console.log('[EMAIL] Attempting to send email via SendGrid Web API...');
+            const fromEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@giftmanager.com';
+            console.log(`[EMAIL] Email details: from=${fromEmail}, to=${to}, subject=${subject}`);
+
+            const response = await axios.post(
+                'https://api.sendgrid.com/v3/mail/send',
+                {
+                    personalizations: [
+                        {
+                            to: [{ email: to }]
+                        }
+                    ],
+                    from: { email: fromEmail },
+                    subject,
+                    content: [
+                        {
+                            type: 'text/plain',
+                            value: text
+                        },
+                        {
+                            type: 'text/html',
+                            value: html
+                        }
+                    ]
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 30000
+                }
+            );
+
+            console.log(`[EMAIL] ✓ Email sent successfully via SendGrid Web API.`);
+            return { messageId: `sendgrid-${Date.now()}` };
         }
 
-        const provider = process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Gmail';
-        console.log(`[EMAIL] Attempting to send email via ${provider}...`);
+        // Fall back to Gmail SMTP
+        console.log('[EMAIL] Attempting to send email via Gmail SMTP...');
+        const transporter = createTransporter();
+        const fromEmail = process.env.GMAIL_USER;
         console.log(`[EMAIL] Email details: from=${fromEmail}, to=${to}, subject=${subject}`);
 
         const sendPromise = transporter.sendMail({
@@ -309,13 +312,13 @@ async function sendEmail({ to, subject, text, html }) {
             html
         });
 
-        // Add timeout wrapper (120 seconds for email - SendGrid needs more time)
+        // Add timeout wrapper
         const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Email send timeout after 120 seconds')), 120000)
+            setTimeout(() => reject(new Error('Email send timeout after 30 seconds')), 30000)
         );
 
         const info = await Promise.race([sendPromise, timeoutPromise]);
-        console.log(`[EMAIL] ✓ Email sent successfully via ${provider}. Message ID: ${info.messageId}`);
+        console.log(`[EMAIL] ✓ Email sent successfully via Gmail. Message ID: ${info.messageId}`);
         return { messageId: info.messageId };
     } catch (err) {
         console.error(`[EMAIL] ✗ Failed to send email: ${err.message}`);
