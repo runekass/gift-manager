@@ -276,7 +276,7 @@ async function sendEmail({ to, subject, text, html }) {
                         ],
                         from: {
                             email: fromEmail,
-                            name: 'Gift Manager'
+                            name: 'Rune Kasseth'
                         },
                         reply_to: {
                             email: fromEmail
@@ -322,7 +322,7 @@ async function sendEmail({ to, subject, text, html }) {
         console.log(`[EMAIL] Email details: from=${fromEmail}, to=${to}, subject=${subject}`);
 
         const sendPromise = transporter.sendMail({
-            from: fromEmail,
+            from: `Rune Kasseth <${fromEmail}>`,
             to,
             subject,
             text,
