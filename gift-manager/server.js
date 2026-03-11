@@ -261,38 +261,54 @@ async function sendEmail({ to, subject, text, html }) {
         // Use SendGrid Web API if available (HTTP-based, works better with Railway)
         if (process.env.SENDGRID_API_KEY) {
             console.log('[EMAIL] Attempting to send email via SendGrid Web API...');
-            const fromEmail = (process.env.SENDGRID_FROM_EMAIL || 'noreply@giftmanager.com').trim();
+
+            // Get sender email - use authenticated domain if available, otherwise fallback
+            // IMPORTANT: Use your authenticated domain (e.g., notifications@vanvikfotball.no)
+            // NOT your personal Gmail address
+            const fromEmail = (process.env.SENDGRID_FROM_EMAIL || 'noreply@vanvikfotball.no').trim();
+            const replyToEmail = process.env.SENDGRID_REPLY_TO || 'rune.kasseth@gmail.com';
+
+            console.log(`[EMAIL] Sender email: ${fromEmail}`);
+            console.log(`[EMAIL] Reply-to email: ${replyToEmail}`);
             console.log(`[EMAIL] Email details: from="${fromEmail}", to="${to}", subject="${subject}"`);
-            console.log(`[EMAIL] From email length: ${fromEmail.length}, contains spaces: ${fromEmail.includes(' ')}`);
 
             try {
+                const mailPayload = {
+                    personalizations: [
+                        {
+                            to: [{ email: to }]
+                        }
+                    ],
+                    from: {
+                        email: fromEmail,
+                        name: 'Rune Kasseth'
+                    },
+                    reply_to: {
+                        email: replyToEmail
+                    },
+                    subject,
+                    content: [
+                        {
+                            type: 'text/plain',
+                            value: text
+                        },
+                        {
+                            type: 'text/html',
+                            value: html
+                        }
+                    ],
+                    // Add tracking settings to improve deliverability
+                    tracking_settings: {
+                        click_tracking: {
+                            enable: false
+                        }
+                    }
+                };
+
+                console.log('[EMAIL] SendGrid payload prepared');
                 const response = await axios.post(
                     'https://api.sendgrid.com/v3/mail/send',
-                    {
-                        personalizations: [
-                            {
-                                to: [{ email: to }]
-                            }
-                        ],
-                        from: {
-                            email: fromEmail,
-                            name: 'Rune Kasseth'
-                        },
-                        reply_to: {
-                            email: fromEmail
-                        },
-                        subject,
-                        content: [
-                            {
-                                type: 'text/plain',
-                                value: text
-                            },
-                            {
-                                type: 'text/html',
-                                value: html
-                            }
-                        ]
-                    },
+                    mailPayload,
                     {
                         headers: {
                             'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
