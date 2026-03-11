@@ -318,11 +318,11 @@ async function sendEmail({ to, subject, text, html }) {
         // Fall back to Gmail SMTP
         console.log('[EMAIL] Attempting to send email via Gmail SMTP...');
         const transporter = createTransporter();
-        const fromEmail = process.env.GMAIL_USER;
-        console.log(`[EMAIL] Email details: from=${fromEmail}, to=${to}, subject=${subject}`);
+        const fromEmailGmail = process.env.GMAIL_USER;
+        console.log(`[EMAIL] Email details: from=${fromEmailGmail}, to=${to}, subject=${subject}`);
 
         const sendPromise = transporter.sendMail({
-            from: `Rune Kasseth <${fromEmail}>`,
+            from: `Rune Kasseth <${fromEmailGmail}>`,
             to,
             subject,
             text,
