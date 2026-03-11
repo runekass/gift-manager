@@ -10,15 +10,42 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 3000;
 
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,  // Try TLS instead of SSL (port 465)
-    secure: false,  // Use STARTTLS
-    auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS
+// Setup email transporter - supports Gmail and SendGrid
+let transporter;
+
+function createTransporter() {
+    // Try SendGrid first (better for production on Railway)
+    if (process.env.SENDGRID_API_KEY) {
+        console.log('[EMAIL] Configuring SendGrid transporter...');
+        return nodemailer.createTransport({
+            host: 'smtp.sendgrid.net',
+            port: 587,
+            secure: false,
+            auth: {
+                user: 'apikey',
+                pass: process.env.SENDGRID_API_KEY
+            },
+            connectionTimeout: 10000,
+            socketTimeout: 10000
+        });
     }
-});
+
+    // Fall back to Gmail
+    console.log('[EMAIL] Configuring Gmail transporter...');
+    return nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,  // Use STARTTLS instead of SSL
+        auth: {
+            user: process.env.GMAIL_USER,
+            pass: process.env.GMAIL_PASS
+        },
+        connectionTimeout: 10000,
+        socketTimeout: 10000
+    });
+}
+
+const transporter = createTransporter();
 
 console.log('========================================');
 console.log('🚀 Gift Manager Server Starting');
@@ -207,7 +234,10 @@ async function authRequired(req, res, next) {
 }
 
 function isMailerConfigured() {
-    return Boolean(process.env.GMAIL_USER && process.env.GMAIL_PASS);
+    // Check if either SendGrid or Gmail is configured
+    const hasSendGrid = Boolean(process.env.SENDGRID_API_KEY);
+    const hasGmail = Boolean(process.env.GMAIL_USER && process.env.GMAIL_PASS);
+    return hasSendGrid || hasGmail;
 }
 
 function parseNotifyPrefs(value) {
@@ -224,9 +254,11 @@ async function sendEmail({ to, subject, text, html }) {
     console.log(`[EMAIL] sendEmail called: to=${to}, subject="${subject}"`);
 
     if (!isMailerConfigured()) {
-        console.warn('[EMAIL] GMAIL_USER or GMAIL_PASS not configured - Email skipped');
-        console.warn(`[EMAIL] GMAIL_USER=${process.env.GMAIL_USER ? 'SET' : 'NOT SET'}`);
-        console.warn(`[EMAIL] GMAIL_PASS=${process.env.GMAIL_PASS ? 'SET' : 'NOT SET'}`);
+        const usingSendGrid = Boolean(process.env.SENDGRID_API_KEY);
+        const usingGmail = Boolean(process.env.GMAIL_USER && process.env.GMAIL_PASS);
+        console.warn(`[EMAIL] No email service configured - Email skipped`);
+        console.warn(`[EMAIL] SendGrid: ${usingSendGrid ? 'SET' : 'NOT SET'}`);
+        console.warn(`[EMAIL] Gmail: ${usingGmail ? 'SET' : 'NOT SET'}`);
         return { skipped: true };
     }
 
@@ -236,18 +268,35 @@ async function sendEmail({ to, subject, text, html }) {
     }
 
     try {
-        console.log(`[EMAIL] Attempting to send email via Gmail...`);
-        const info = await transporter.sendMail({
-            from: process.env.GMAIL_USER,
+        // Determine sender email
+        const fromEmail = process.env.SENDGRID_API_KEY
+            ? 'noreply@giftmanager.com'  // SendGrid needs a verified domain
+            : process.env.GMAIL_USER;
+
+        const provider = process.env.SENDGRID_API_KEY ? 'SendGrid' : 'Gmail';
+        console.log(`[EMAIL] Attempting to send email via ${provider}...`);
+        console.log(`[EMAIL] Email details: from=${fromEmail}, to=${to}, subject=${subject}`);
+
+        const sendPromise = transporter.sendMail({
+            from: fromEmail,
             to,
             subject,
             text,
             html
         });
-        console.log(`[EMAIL] ✓ Email sent successfully. Message ID: ${info.messageId}`);
+
+        // Add timeout wrapper (60 seconds for email)
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Email send timeout after 60 seconds')), 60000)
+        );
+
+        const info = await Promise.race([sendPromise, timeoutPromise]);
+        console.log(`[EMAIL] ✓ Email sent successfully via ${provider}. Message ID: ${info.messageId}`);
         return { messageId: info.messageId };
     } catch (err) {
         console.error(`[EMAIL] ✗ Failed to send email: ${err.message}`);
+        console.error(`[EMAIL] Error code: ${err.code}`);
+        console.error(`[EMAIL] Error details:`, err);
         throw err;
     }
 }
@@ -333,11 +382,15 @@ app.get('/api/email-config', (req, res) => {
     console.log('[EMAIL-CONFIG] Test endpoint called');
     const gmailUser = process.env.GMAIL_USER;
     const gmailPass = process.env.GMAIL_PASS;
+    const sendgridKey = process.env.SENDGRID_API_KEY;
 
     res.json({
-        configured: Boolean(gmailUser && gmailPass),
+        configured: Boolean((gmailUser && gmailPass) || sendgridKey),
+        gmail_configured: Boolean(gmailUser && gmailPass),
         gmail_user: gmailUser ? `${gmailUser.substring(0, 3)}***` : 'NOT SET',
         gmail_pass: gmailPass ? `***${gmailPass.substring(gmailPass.length - 3)}` : 'NOT SET',
+        sendgrid_configured: Boolean(sendgridKey),
+        sendgrid_key: sendgridKey ? `***${sendgridKey.substring(sendgridKey.length - 8)}` : 'NOT SET',
         node_env: process.env.NODE_ENV,
         timestamp: new Date().toISOString()
     });

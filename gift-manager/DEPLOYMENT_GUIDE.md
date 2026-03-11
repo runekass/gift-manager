@@ -8,13 +8,43 @@ Your application is already set up to handle both local and Railway deployments:
 - **Railway**: Automatically uses `MYSQL_URL` or `MYSQLHOST`, `MYSQLPORT`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`
 
 ### 2. Email/Mail Functionality (IMPORTANT!)
-The application includes a "Send påminnelser" (Send reminders) feature that sends email notifications to users. **You MUST configure the following variables before deploying:**
+The application includes a "Send påminnelser" (Send reminders) feature that sends email notifications to users. **You MUST configure ONE of the email services before deploying.**
 
-#### Required Environment Variables:
-- `GMAIL_USER` - Your Gmail address (e.g., `your_email@gmail.com`)
-- `GMAIL_PASS` - Your Gmail App Password (NOT your regular Gmail password)
+#### Email Service Options:
 
-#### How to Set Up Gmail for Email Sending:
+**RECOMMENDED for Railway: SendGrid (Free Tier Available)**
+- Reliable SMTP on port 587
+- Works perfectly with Railway
+- Free tier includes 100 emails/day (enough for most use cases)
+- Setup is straightforward
+
+**Alternative: Gmail**
+- Requires more setup
+- May experience timeout issues on some hosting platforms (including Railway)
+- Requires Gmail App Password
+- Less reliable for automated sending at scale
+
+#### Option A: SendGrid Setup (RECOMMENDED)
+
+1. **Create SendGrid Account:**
+   - Go to https://sendgrid.com/
+   - Sign up for a free account (no credit card required initially)
+   - Verify your email address
+
+2. **Generate API Key:**
+   - In SendGrid dashboard, go to Settings → API Keys
+   - Click "Create API Key"
+   - Give it a name like "Gift Manager"
+   - Choose "Restricted Access" and enable:
+     - Mail Send: Full Access
+   - Copy the API key
+
+3. **Add to Railway Variables:**
+   - In Railway project settings, add: `SENDGRID_API_KEY=<your_api_key>`
+
+That's it! The application will automatically use SendGrid.
+
+#### Option B: Gmail Setup (Alternative)
 
 1. **Enable 2-Factor Authentication:**
    - Go to your Google Account: https://myaccount.google.com/security
@@ -26,7 +56,11 @@ The application includes a "Send påminnelser" (Send reminders) feature that sen
    - Google will generate a 16-character password
    - **Copy this password** (you'll need it for `GMAIL_PASS`)
 
-3. **Keep Your Credentials Safe:**
+3. **Add to Railway Variables:**
+   - `GMAIL_USER=your_gmail_address@gmail.com`
+   - `GMAIL_PASS=your_16_character_app_password`
+
+4. **Keep Your Credentials Safe:**
    - NEVER commit `.env` to version control
    - The `.gitignore` should already exclude `.env`
    - Only use these credentials in production environment variables
@@ -60,7 +94,12 @@ The application includes a "Send påminnelser" (Send reminders) feature that sen
    MYSQLPASSWORD=<password>
    MYSQLDATABASE=<database_name>
    
-   # Email Configuration (REQUIRED for reminder feature)
+   # Email Configuration - Choose ONE of the following:
+   
+   # Option A: SendGrid (RECOMMENDED)
+   SENDGRID_API_KEY=your_sendgrid_api_key
+   
+   # Option B: Gmail (Alternative)
    GMAIL_USER=your_gmail_address@gmail.com
    GMAIL_PASS=your_gmail_app_password
    ```
@@ -74,8 +113,7 @@ The application includes a "Send påminnelser" (Send reminders) feature that sen
 Before deploying to production:
 
 - [ ] Database is configured (either `MYSQL_URL` or individual `MYSQL*` variables)
-- [ ] `GMAIL_USER` is set to your Gmail address
-- [ ] `GMAIL_PASS` is set to your App Password (not your regular Gmail password)
+- [ ] Email is configured: EITHER `SENDGRID_API_KEY` OR `GMAIL_USER` + `GMAIL_PASS`
 - [ ] `NODE_ENV` is set to `production`
 - [ ] `.env` file is in `.gitignore` and NOT committed to git
 - [ ] SQL migration (`add_user_roles.sql`) has been applied to the database
@@ -99,28 +137,58 @@ If emails are not being sent:
 
 ### 6. Troubleshooting
 
-**"Email skipped: GMAIL_USER/GMAIL_PASS not configured"**
-- This warning means the environment variables are not set
-- Add `GMAIL_USER` and `GMAIL_PASS` to your Railway project variables
+**"Email skipped: SENDGRID_API_KEY/GMAIL_USER/GMAIL_PASS not configured"**
+- This warning means neither email service is configured
+- Set either `SENDGRID_API_KEY` OR both `GMAIL_USER` and `GMAIL_PASS` in Railway variables
+
+**"Failed to send email: Connection timeout" (with Gmail)**
+- **This is a known issue with Gmail on Railway due to network/firewall restrictions**
+- **SOLUTION: Use SendGrid instead** (see Section 2, Option A)
+- SendGrid is optimized for cloud platforms and has much better reliability on Railway
+- Gmail's SMTP server (smtp.gmail.com:465) often has connectivity issues on Railway's infrastructure
+- The Network Flow logs showing `dropCause: "ICMP_CSUM"` indicate dropped connections to Gmail servers
+
+**How to Migrate from Gmail to SendGrid:**
+1. If you've been using Gmail, remove these variables from Railway:
+   - Remove `GMAIL_USER`
+   - Remove `GMAIL_PASS`
+2. Follow the SendGrid setup steps in Section 2, Option A
+3. Add `SENDGRID_API_KEY` to your Railway variables
+4. Redeploy your application
+5. Test by creating a new todo and assigning it - you should now receive the email
 
 **Gmail authentication fails**
 - Don't use your regular Gmail password - use the 16-character App Password
-- Ensure 2-Factor Authentication is enabled on your Gmail account
+- Ensure 2-Factor Authentication is enabled on your Google Account
 - Re-generate the App Password if needed
+- Note: Even with correct credentials, you may still experience timeouts on Railway due to network restrictions
+
+**SendGrid not working**
+- Verify your API key is copied correctly (no extra spaces)
+- Check SendGrid dashboard to confirm your account is active
+- Look in Railway logs for specific error messages
+- SendGrid is much more reliable than Gmail on Railway - if you experience issues, it's usually configuration related
 
 **Database connection issues**
 - Railway MySQL plugin should auto-populate `MYSQL_URL`
-- If using individual variables, ensure all four are set correctly:
+- If using individual variables, ensure all five are set correctly:
   - `MYSQLHOST`, `MYSQLPORT`, `MYSQLUSER`, `MYSQLPASSWORD`, `MYSQLDATABASE`
 
 ## Summary
 
 **The main thing you need to do before deploying to Railway:**
 
-1. Set up Gmail App Password (see steps above)
-2. Add `GMAIL_USER` and `GMAIL_PASS` to your Railway environment variables
-3. Ensure your database is properly connected
-4. Run the SQL migration on your Railway database
+1. **Choose an email service:**
+   - **Recommended:** SendGrid (free, reliable on Railway)
+   - **Alternative:** Gmail (requires App Password, may have timeouts)
+   
+2. **Set up your chosen service** (see steps in Section 2)
+
+3. **Add environment variables** to your Railway project (see Section 3)
+
+4. **Ensure your database is properly connected**
+
+5. **Run the SQL migration** on your Railway database
 
 That's it! Your application should then be fully functional with email reminder notifications.
 
