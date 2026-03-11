@@ -45,7 +45,7 @@ function createTransporter() {
     });
 }
 
-const transporter = createTransporter();
+transporter = createTransporter();
 
 console.log('========================================');
 console.log('🚀 Gift Manager Server Starting');
